@@ -67,12 +67,10 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Signup error:", err);
     let userMessage: string;
-    if (message.includes("MONGODB_URI") || message.includes("JWT_SECRET")) {
-      userMessage = "Server configuration error. Please add MONGODB_URI and JWT_SECRET in .env.local or Vercel Environment Variables.";
-    } else if (message.includes("Authentication failed") || message.includes("bad auth") || message.includes("auth failed")) {
-      userMessage = "Database authentication failed. Check MONGODB_URI username and password in .env.local or Vercel.";
+    if (message.includes("Authentication failed") || message.includes("bad auth") || message.includes("auth failed")) {
+      userMessage = "Database authentication failed. Check username and password.";
     } else if (message.includes("connect") || message.includes("MongoNetworkError") || message.includes("MongoServerError")) {
-      userMessage = "Database connection failed. Check MONGODB_URI and MongoDB Atlas network access (allow 0.0.0.0/0).";
+      userMessage = "Database connection failed. Check MongoDB Atlas network access (allow 0.0.0.0/0).";
     } else if (message.includes("E11000") || message.includes("duplicate key")) {
       userMessage = "An account with this email already exists.";
     } else {

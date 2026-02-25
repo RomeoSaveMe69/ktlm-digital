@@ -52,12 +52,10 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Login error:", err);
     let userMessage: string;
-    if (message.includes("MONGODB_URI") || message.includes("JWT_SECRET")) {
-      userMessage = "Server configuration error. Add MONGODB_URI and JWT_SECRET in .env.local or Vercel Environment Variables.";
-    } else if (message.includes("Authentication failed") || message.includes("bad auth") || message.includes("auth failed")) {
-      userMessage = "Database authentication failed. Check MONGODB_URI username and password in .env.local or Vercel.";
+    if (message.includes("Authentication failed") || message.includes("bad auth") || message.includes("auth failed")) {
+      userMessage = "Database authentication failed. Check username and password.";
     } else if (message.includes("connect") || message.includes("MongoNetworkError") || message.includes("MongoServerError")) {
-      userMessage = "Database connection failed. Check MONGODB_URI and MongoDB Atlas network access (allow 0.0.0.0/0).";
+      userMessage = "Database connection failed. Check MongoDB Atlas network access (allow 0.0.0.0/0).";
     } else {
       userMessage = message.length > 200 ? "Login failed. Please try again." : message;
     }
