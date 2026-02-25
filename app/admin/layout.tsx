@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 
+/** Sidebar links for admin panel (products, users, orders, deposits, chat). */
 const SIDEBAR_NAV = [
   { href: "/admin", label: "Dashboard Overview", icon: "📊" },
   { href: "/admin#products", label: "All Products", icon: "🛒" },
@@ -10,6 +11,7 @@ const SIDEBAR_NAV = [
   { href: "/admin#chat", label: "Chat Monitoring", icon: "💬" },
 ];
 
+/** Admin layout: enforces requireAdmin(); only role === 'admin' can access. */
 export default async function AdminLayout({
   children,
 }: {

@@ -4,22 +4,32 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
 import { Wallet } from "@/lib/models/Wallet";
 import { createSession, setSessionCookie } from "@/lib/auth";
+import { apiError, normalizeErrorMessage } from "@/lib/api-utils";
 
+/**
+ * POST /api/auth/signup – register with email/password; creates user (role: buyer) and MMK/USDT wallets.
+ * Body: { email, password, fullName? }. Returns { user } or { error }.
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password, fullName } = body;
-    if (!email || !password || typeof email !== "string" || typeof password !== "string") {
+    if (
+      !email ||
+      !password ||
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
       return NextResponse.json(
         { error: "Email and password are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const trimmedEmail = email.trim().toLowerCase();
     if (password.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -29,7 +39,7 @@ export async function POST(request: Request) {
     if (existing) {
       return NextResponse.json(
         { error: "An account with this email already exists." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -64,18 +74,13 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
     console.error("Signup error:", err);
-    let userMessage: string;
-    if (message.includes("Authentication failed") || message.includes("bad auth") || message.includes("auth failed")) {
-      userMessage = "Database authentication failed. Check username and password.";
-    } else if (message.includes("connect") || message.includes("MongoNetworkError") || message.includes("MongoServerError")) {
-      userMessage = "Database connection failed. Check MongoDB Atlas network access (allow 0.0.0.0/0).";
-    } else if (message.includes("E11000") || message.includes("duplicate key")) {
-      userMessage = "An account with this email already exists.";
-    } else {
-      userMessage = message.length > 200 ? "Sign up failed. Please try again." : message;
-    }
-    return NextResponse.json({ error: userMessage }, { status: 500 });
+    const userMessage = normalizeErrorMessage(err);
+    return apiError(
+      userMessage.includes("Database") || userMessage.includes("already exists")
+        ? userMessage
+        : "Sign up failed. Please try again.",
+      500,
+    );
   }
 }

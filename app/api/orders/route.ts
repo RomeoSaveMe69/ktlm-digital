@@ -40,7 +40,7 @@ export async function GET() {
     console.error("Orders list error:", err);
     return NextResponse.json(
       { error: "Failed to load orders" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     if (!productId || !playerId || typeof playerId !== "string") {
       return NextResponse.json(
         { error: "productId and playerId are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     if (!product || !product.isActive) {
       return NextResponse.json(
         { error: "Product not found or inactive." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
     console.error("Order create error:", err);
     return NextResponse.json(
       { error: "Failed to create order." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

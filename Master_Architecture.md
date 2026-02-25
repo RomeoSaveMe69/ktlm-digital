@@ -1,9 +1,11 @@
 # Kone The Lay Myar Digital (ကုန်သည်လေးများ) - Master Architecture
 
 ## Vision: The "Alibaba of Myanmar"
+
 This project is the digital branch (`konethelaymyardigital.com`) of the "Kone The Lay Myar" ecosystem, focusing on P2P Digital Goods and Game Top-ups. (A future branch will handle physical goods).
 
 ## 1. Project Overview & Tech Stack
+
 - **Frontend & Backend:** Next.js (React) with TypeScript (App Router).
 - **Brand Name:** Kone The Lay Myar Digital (Abbreviation: KTLM Digital).
 - **Styling:** Tailwind CSS (Dark Theme / Gamer Vibe).
@@ -12,12 +14,15 @@ This project is the digital branch (`konethelaymyardigital.com`) of the "Kone Th
 - **Core Platform:** Telegram Mini App (TMA) / Web App.
 
 ## 2. Core Strategy: Telegram Mini App & Bot Integration (CRITICAL)
-Since both Buyers and Sellers primarily use mobile phones, the Next.js frontend MUST be optimized to run flawlessly as a **Telegram Mini App**. 
+
+Since both Buyers and Sellers primarily use mobile phones, the Next.js frontend MUST be optimized to run flawlessly as a **Telegram Mini App**.
+
 - **Telegram Bot:** Acts as the "Heart" of the system. It handles all instant notifications (New Order, Escrow Held, Chat Messages, Slip Approvals).
-- **Mini App:** Users will open the Next.js marketplace directly inside Telegram via the Bot's "Launch App" button. 
+- **Mini App:** Users will open the Next.js marketplace directly inside Telegram via the Bot's "Launch App" button.
 - **Authentication:** Users will link their Telegram accounts (`telegram_user_id` / `telegram_chat_id`) for seamless login and notifications.
 
 ## 3. Phase 1: Manual P2P Topup System (Escrow + Admin Control)
+
 - **Seller KYC:** Sellers must register and submit KYC before listing products.
 - **Escrow Wallet:** Buyers deposit MMK (via KPay/WavePay manual slip upload). Admin approves the slip before funds are credited.
 - **Platform Fee:** The platform takes a 0.5% fee on successful trades.
@@ -26,6 +31,7 @@ Since both Buyers and Sellers primarily use mobile phones, the Next.js frontend 
 - **Disputes:** If an order has an issue, it goes into a "Disputed" state for Admin resolution.
 
 ## 4. Phase 2: Future Scalability (API Provider System)
+
 - The database is designed NOW to support automated API top-ups in the future.
 - Sellers will be able to subscribe to API fulfillment (e.g., MooGold).
 - **Internal Exchange:** Sellers will convert their MMK wallet balance into USDT within the platform (at a platform-defined rate) to fund their API usage.
@@ -243,3 +249,4 @@ BEGIN
 END; $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER on_profile_created_create_wallets AFTER INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.create_wallets_for_new_user();
+```

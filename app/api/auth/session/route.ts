@@ -4,6 +4,9 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
 import { Wallet } from "@/lib/models/Wallet";
 
+/**
+ * GET /api/auth/session – return current user and wallets if logged in, else { user: null }.
+ */
 export async function GET() {
   try {
     const session = await getSession();

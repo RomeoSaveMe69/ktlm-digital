@@ -27,6 +27,9 @@ export async function GET() {
     });
   } catch (err) {
     console.error("Admin users list error:", err);
-    return NextResponse.json({ error: "Failed to load users." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load users." },
+      { status: 500 },
+    );
   }
 }

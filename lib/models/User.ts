@@ -1,6 +1,8 @@
 import mongoose, { Schema, model, models } from "mongoose";
 
+/** P2P role: buyer (default), seller, or admin. */
 export type UserRole = "buyer" | "seller" | "admin";
+/** KYC status for seller verification. */
 export type KycStatus = "pending" | "approved" | "rejected";
 
 export interface IUser {
@@ -18,15 +20,29 @@ export interface IUser {
 
 const userSchema = new Schema<IUser>(
   {
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     passwordHash: { type: String, required: true, select: false },
     fullName: { type: String, trim: true },
-    role: { type: String, enum: ["buyer", "seller", "admin"], default: "buyer" },
-    kycStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    role: {
+      type: String,
+      enum: ["buyer", "seller", "admin"],
+      default: "buyer",
+    },
+    kycStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
     telegramChatId: { type: String },
     telegramUsername: { type: String, trim: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.index({ email: 1 });

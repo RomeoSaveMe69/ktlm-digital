@@ -1,6 +1,11 @@
 import mongoose, { Schema, model, models } from "mongoose";
 
-export type OrderStatus = "pending" | "processing" | "completed" | "cancelled" | "disputed";
+export type OrderStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "cancelled"
+  | "disputed";
 export type FulfillmentType = "manual" | "api";
 
 export interface IOrder {
@@ -32,11 +37,15 @@ const orderSchema = new Schema<IOrder>(
       enum: ["pending", "processing", "completed", "cancelled", "disputed"],
       default: "pending",
     },
-    fulfillmentType: { type: String, enum: ["manual", "api"], default: "manual" },
+    fulfillmentType: {
+      type: String,
+      enum: ["manual", "api"],
+      default: "manual",
+    },
     apiTransactionId: { type: String },
     completedAt: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 orderSchema.index({ buyerId: 1 });

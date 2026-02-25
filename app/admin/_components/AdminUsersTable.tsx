@@ -42,7 +42,9 @@ export function AdminUsersTable({ users }: { users: UserRow[] }) {
             <th className="px-4 py-3 font-medium text-slate-400">Name</th>
             <th className="px-4 py-3 font-medium text-slate-400">Role</th>
             <th className="px-4 py-3 font-medium text-slate-400">KYC</th>
-            <th className="px-4 py-3 font-medium text-slate-400">Change role</th>
+            <th className="px-4 py-3 font-medium text-slate-400">
+              Change role
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -58,14 +60,20 @@ export function AdminUsersTable({ users }: { users: UserRow[] }) {
                 key={u.id}
                 className="border-b border-slate-700/40 transition hover:bg-slate-800/60"
               >
-                <td className="px-4 py-3 font-medium text-slate-200">{u.email}</td>
-                <td className="px-4 py-3 text-slate-400">{u.fullName ?? "—"}</td>
+                <td className="px-4 py-3 font-medium text-slate-200">
+                  {u.email}
+                </td>
+                <td className="px-4 py-3 text-slate-400">
+                  {u.fullName ?? "—"}
+                </td>
                 <td className="px-4 py-3">
                   <span className="inline-flex rounded-md bg-slate-600/50 px-2 py-0.5 text-xs font-medium text-slate-300 capitalize">
                     {u.role}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-500 text-xs capitalize">{u.kycStatus}</td>
+                <td className="px-4 py-3 text-slate-500 text-xs capitalize">
+                  {u.kycStatus}
+                </td>
                 <td className="px-4 py-3">
                   <select
                     value={u.role}

@@ -19,10 +19,16 @@ export default async function SellerLayout({
             <span className="ml-1 text-slate-500 text-sm">Seller</span>
           </Link>
           <nav className="flex gap-4 text-sm">
-            <Link href="/seller" className="text-slate-400 hover:text-slate-200">
+            <Link
+              href="/seller"
+              className="text-slate-400 hover:text-slate-200"
+            >
               My Products
             </Link>
-            <Link href="/profile" className="text-slate-400 hover:text-slate-200">
+            <Link
+              href="/profile"
+              className="text-slate-400 hover:text-slate-200"
+            >
               Profile
             </Link>
             <Link href="/" className="text-slate-400 hover:text-slate-200">

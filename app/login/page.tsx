@@ -12,7 +12,10 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +42,10 @@ export default function LoginPage() {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Network error. Please try again.",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Network error. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -54,7 +60,10 @@ export default function LoginPage() {
       return;
     }
     if (password.length < 6) {
-      setMessage({ type: "error", text: "Password must be at least 6 characters." });
+      setMessage({
+        type: "error",
+        text: "Password must be at least 6 characters.",
+      });
       return;
     }
     setLoading(true);
@@ -83,7 +92,10 @@ export default function LoginPage() {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Network error. Please try again.",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Network error. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -101,7 +113,9 @@ export default function LoginPage() {
             <span className="bg-gradient-to-r from-emerald-400 to-purple-400 bg-clip-text text-transparent">
               Kone The Lay Myar
             </span>
-            <span className="text-slate-400 font-normal text-sm ml-1">Digital</span>
+            <span className="text-slate-400 font-normal text-sm ml-1">
+              Digital
+            </span>
           </Link>
         </div>
       </header>
@@ -111,18 +125,28 @@ export default function LoginPage() {
           <div className="flex rounded-lg bg-slate-900/80 p-1 mb-6">
             <button
               type="button"
-              onClick={() => { setAuthMode("signin"); setMessage(null); }}
+              onClick={() => {
+                setAuthMode("signin");
+                setMessage(null);
+              }}
               className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
-                isSignIn ? "bg-slate-700 text-slate-100" : "text-slate-500 hover:text-slate-300"
+                isSignIn
+                  ? "bg-slate-700 text-slate-100"
+                  : "text-slate-500 hover:text-slate-300"
               }`}
             >
               Sign in
             </button>
             <button
               type="button"
-              onClick={() => { setAuthMode("signup"); setMessage(null); }}
+              onClick={() => {
+                setAuthMode("signup");
+                setMessage(null);
+              }}
               className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
-                !isSignIn ? "bg-slate-700 text-slate-100" : "text-slate-500 hover:text-slate-300"
+                !isSignIn
+                  ? "bg-slate-700 text-slate-100"
+                  : "text-slate-500 hover:text-slate-300"
               }`}
             >
               Sign up
@@ -140,7 +164,10 @@ export default function LoginPage() {
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-400 mb-1.5">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-slate-400 mb-1.5"
+              >
                 Email
               </label>
               <input
@@ -157,7 +184,10 @@ export default function LoginPage() {
 
             {!isSignIn && (
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-slate-400 mb-1.5">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium text-slate-400 mb-1.5"
+                >
                   Name (optional)
                 </label>
                 <input
@@ -173,7 +203,10 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-400 mb-1.5">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-400 mb-1.5"
+              >
                 Password
               </label>
               <input
@@ -188,13 +221,18 @@ export default function LoginPage() {
                 className="w-full rounded-xl border border-slate-600 bg-slate-800/80 py-3 px-4 text-slate-100 placeholder-slate-500 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
               {!isSignIn && (
-                <p className="mt-1 text-xs text-slate-500">At least 6 characters</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  At least 6 characters
+                </p>
               )}
             </div>
 
             {!isSignIn && (
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-400 mb-1.5">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-slate-400 mb-1.5"
+                >
                   Confirm password
                 </label>
                 <input
@@ -237,7 +275,10 @@ export default function LoginPage() {
               Already have an account?{" "}
               <button
                 type="button"
-                onClick={() => { setAuthMode("signin"); setMessage(null); }}
+                onClick={() => {
+                  setAuthMode("signin");
+                  setMessage(null);
+                }}
                 className="text-emerald-400 hover:underline"
               >
                 Sign in

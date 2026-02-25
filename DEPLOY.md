@@ -13,7 +13,7 @@
    - ဒီနှစ်ခု မထည့်ရင် Sign up / Login မအောင်ပါ။
    - **MongoAPIError: URI option '...' cannot be specified with no value** တက်ရင်: MONGODB_URI ကို ပြန်ကူးထည့်ပါ၊ query string ထဲမှာ value မပါတဲ့ option မရှိစေရပါမယ်။ အနီးက format အတိုင်း သုံးပါ။
 
-2. **Redeploy** လုပ်ပြီး **Clear cache** လုပ်ပါ။  
+2. **Redeploy** လုပ်ပြီး **Clear cache** လုပ်ပါ။
    - **Deployments** tab → နောက်ဆုံး deployment မှာ **⋯** → **Redeploy** → **Redeploy with existing Build Cache** ကို **မရွေးပါနဲ့** (cache ဖျက်ပြီး ပြန် build လုပ်မယ်)။
 
 3. သေချာစေရန် local မှာ `npm run build` ပြန် run ကြည့်ပါ။ Supabase ကုဒ်/package မရှိပါက build အောင်ရပါမယ်။

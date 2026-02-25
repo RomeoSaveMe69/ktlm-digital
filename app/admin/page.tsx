@@ -10,20 +10,24 @@ import { AdminUsersTable } from "./_components/AdminUsersTable";
 export default async function AdminDashboardPage() {
   await connectDB();
 
-  const [userCount, orders, revenueResult, allProducts, allUsers] = await Promise.all([
-    User.countDocuments(),
-    Order.find({ status: { $in: ["pending", "processing", "disputed"] } })
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .populate("productId", "name gameName")
-      .lean(),
-    Order.aggregate([
-      { $match: { status: "completed" } },
-      { $group: { _id: null, total: { $sum: "$platformFeeMmk" } } },
-    ]),
-    Product.find().populate("sellerId", "email fullName role").sort({ createdAt: -1 }).lean(),
-    User.find().select("-passwordHash").sort({ createdAt: -1 }).lean(),
-  ]);
+  const [userCount, orders, revenueResult, allProducts, allUsers] =
+    await Promise.all([
+      User.countDocuments(),
+      Order.find({ status: { $in: ["pending", "processing", "disputed"] } })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .populate("productId", "name gameName")
+        .lean(),
+      Order.aggregate([
+        { $match: { status: "completed" } },
+        { $group: { _id: null, total: { $sum: "$platformFeeMmk" } } },
+      ]),
+      Product.find()
+        .populate("sellerId", "email fullName role")
+        .sort({ createdAt: -1 })
+        .lean(),
+      User.find().select("-passwordHash").sort({ createdAt: -1 }).lean(),
+    ]);
 
   const pendingOrderCount = await Order.countDocuments({
     status: { $in: ["pending", "processing"] },
@@ -55,9 +59,24 @@ export default async function AdminDashboardPage() {
   }));
 
   const STATS = [
-    { label: "Total Users", value: userCount.toLocaleString(), sub: "profiles", icon: "👥" },
-    { label: "Pending Orders", value: pendingOrderCount.toString(), sub: "processing", icon: "📦" },
-    { label: "Revenue (MMK)", value: revenue.toLocaleString(), sub: "platform fees", icon: "💰" },
+    {
+      label: "Total Users",
+      value: userCount.toLocaleString(),
+      sub: "profiles",
+      icon: "👥",
+    },
+    {
+      label: "Pending Orders",
+      value: pendingOrderCount.toString(),
+      sub: "processing",
+      icon: "📦",
+    },
+    {
+      label: "Revenue (MMK)",
+      value: revenue.toLocaleString(),
+      sub: "platform fees",
+      icon: "💰",
+    },
   ];
 
   // Deposit approvals: optional Transaction model later; for now empty list
@@ -86,7 +105,9 @@ export default async function AdminDashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-slate-500">{stat.label}</p>
-                  <p className="mt-1 text-2xl font-bold text-slate-100">{stat.value}</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-100">
+                    {stat.value}
+                  </p>
                   <p className="mt-0.5 text-xs text-slate-500">{stat.sub}</p>
                 </div>
                 <span className="text-2xl opacity-80" aria-hidden>
@@ -127,7 +148,8 @@ export default async function AdminDashboardPage() {
           Deposit Approvals
         </h2>
         <p className="mb-4 text-sm text-slate-500">
-          Transactions where type is &quot;deposit&quot; and status is &quot;pending&quot;. Approve or reject slip uploads.
+          Transactions where type is &quot;deposit&quot; and status is
+          &quot;pending&quot;. Approve or reject slip uploads.
         </p>
         <DepositApprovals deposits={pendingDeposits} />
       </section>
@@ -144,17 +166,30 @@ export default async function AdminDashboardPage() {
             <table className="w-full min-w-[600px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-700/80 bg-slate-800/80">
-                  <th className="px-4 py-3 font-medium text-slate-400">Order ID</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Amount (MMK)</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Status</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Created</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Action</th>
+                  <th className="px-4 py-3 font-medium text-slate-400">
+                    Order ID
+                  </th>
+                  <th className="px-4 py-3 font-medium text-slate-400">
+                    Amount (MMK)
+                  </th>
+                  <th className="px-4 py-3 font-medium text-slate-400">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 font-medium text-slate-400">
+                    Created
+                  </th>
+                  <th className="px-4 py-3 font-medium text-slate-400">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-slate-500"
+                    >
                       No active orders.
                     </td>
                   </tr>

@@ -12,10 +12,42 @@ const CATEGORIES = [
 
 // Mock flash sales (replace with real data later)
 const FLASH_SALES = [
-  { id: "1", game: "MLBB", product: "100 Diamonds", price: 2500, originalPrice: 3000, discount: "17%", endsIn: "2h 15m" },
-  { id: "2", game: "PUBG", product: "60 UC", price: 1800, originalPrice: 2200, discount: "18%", endsIn: "5h 42m" },
-  { id: "3", game: "Free Fire", product: "50 Diamonds", price: 1200, originalPrice: 1500, discount: "20%", endsIn: "1h 08m" },
-  { id: "4", game: "Genshin", product: "330 Genesis", price: 8500, originalPrice: 10000, discount: "15%", endsIn: "8h 00m" },
+  {
+    id: "1",
+    game: "MLBB",
+    product: "100 Diamonds",
+    price: 2500,
+    originalPrice: 3000,
+    discount: "17%",
+    endsIn: "2h 15m",
+  },
+  {
+    id: "2",
+    game: "PUBG",
+    product: "60 UC",
+    price: 1800,
+    originalPrice: 2200,
+    discount: "18%",
+    endsIn: "5h 42m",
+  },
+  {
+    id: "3",
+    game: "Free Fire",
+    product: "50 Diamonds",
+    price: 1200,
+    originalPrice: 1500,
+    discount: "20%",
+    endsIn: "1h 08m",
+  },
+  {
+    id: "4",
+    game: "Genshin",
+    product: "330 Genesis",
+    price: 8500,
+    originalPrice: 10000,
+    discount: "15%",
+    endsIn: "8h 00m",
+  },
 ];
 
 const NAV_ITEMS = [
@@ -35,7 +67,9 @@ export default function Home() {
             <span className="bg-gradient-to-r from-emerald-400 to-purple-400 bg-clip-text text-transparent">
               Kone The Lay Myar
             </span>
-            <span className="text-slate-400 font-normal text-sm ml-1">Digital</span>
+            <span className="text-slate-400 font-normal text-sm ml-1">
+              Digital
+            </span>
           </h1>
           <Link
             href="/login"
@@ -53,7 +87,10 @@ export default function Home() {
             Search products or games
           </label>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden>
+            <span
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              aria-hidden
+            >
               🔍
             </span>
             <input
@@ -78,7 +115,9 @@ export default function Home() {
                 className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-700/60 bg-slate-800/60 py-4 transition hover:border-emerald-500/40 hover:bg-slate-800 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] active:scale-[0.98]"
               >
                 <span className="text-2xl">{cat.icon}</span>
-                <span className="text-xs font-medium text-slate-300">{cat.name}</span>
+                <span className="text-xs font-medium text-slate-300">
+                  {cat.name}
+                </span>
               </Link>
             ))}
           </div>
@@ -106,7 +145,9 @@ export default function Home() {
                   🎮
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-slate-200">{sale.product}</p>
+                  <p className="truncate font-medium text-slate-200">
+                    {sale.product}
+                  </p>
                   <p className="text-xs text-slate-500">{sale.game}</p>
                 </div>
                 <div className="shrink-0 text-right">
@@ -121,7 +162,9 @@ export default function Home() {
                   <span className="rounded-md bg-purple-500/25 px-2 py-0.5 text-xs font-medium text-purple-300">
                     -{sale.discount}
                   </span>
-                  <p className="mt-1 text-[10px] text-slate-500">Ends {sale.endsIn}</p>
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    Ends {sale.endsIn}
+                  </p>
                 </div>
               </Link>
             ))}

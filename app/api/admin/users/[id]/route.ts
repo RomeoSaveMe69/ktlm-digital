@@ -9,7 +9,7 @@ const ROLES = ["buyer", "seller", "admin"] as const;
 /** PATCH: Update user (admin only). e.g. role change. */
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getSession();
@@ -26,13 +26,17 @@ export async function PATCH(
       updates.role = body.role;
     }
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: "No valid updates (e.g. role)." }, { status: 400 });
+      return NextResponse.json(
+        { error: "No valid updates (e.g. role)." },
+        { status: 400 },
+      );
     }
     await connectDB();
     const user = await User.findByIdAndUpdate(id, updates, { new: true })
       .select("-passwordHash")
       .lean();
-    if (!user) return NextResponse.json({ error: "User not found." }, { status: 404 });
+    if (!user)
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
     return NextResponse.json({
       user: {
         id: user._id.toString(),
@@ -44,6 +48,9 @@ export async function PATCH(
     });
   } catch (err) {
     console.error("Admin user update error:", err);
-    return NextResponse.json({ error: "Failed to update user." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update user." },
+      { status: 500 },
+    );
   }
 }

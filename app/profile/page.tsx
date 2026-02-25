@@ -6,6 +6,10 @@ import { User } from "@/lib/models/User";
 import { Wallet } from "@/lib/models/Wallet";
 import { ProfileSignOut } from "./ProfileSignOut";
 
+/**
+ * Profile page: account info, wallets, and role-based actions (Admin Panel, Seller Dashboard, Become a Seller).
+ * Requires login; redirects to /login if no session.
+ */
 export default async function ProfilePage() {
   const session = await getSession();
   if (!session) {
@@ -32,7 +36,9 @@ export default async function ProfilePage() {
             <span className="bg-gradient-to-r from-emerald-400 to-purple-400 bg-clip-text text-transparent">
               Kone The Lay Myar
             </span>
-            <span className="text-slate-400 font-normal text-sm ml-1">Digital</span>
+            <span className="text-slate-400 font-normal text-sm ml-1">
+              Digital
+            </span>
           </Link>
           <ProfileSignOut />
         </div>
@@ -48,17 +54,25 @@ export default async function ProfilePage() {
           <dl className="space-y-2 text-sm">
             <div>
               <dt className="text-slate-500">Email</dt>
-              <dd className="font-medium text-slate-200">{user.email ?? "—"}</dd>
+              <dd className="font-medium text-slate-200">
+                {user.email ?? "—"}
+              </dd>
             </div>
             <div>
               <dt className="text-slate-500">Name</dt>
-              <dd className="font-medium text-slate-200">{user.fullName ?? "—"}</dd>
+              <dd className="font-medium text-slate-200">
+                {user.fullName ?? "—"}
+              </dd>
             </div>
             <div>
               <dt className="text-slate-500">Role</dt>
               <dd>
                 <span className="inline-flex rounded-md bg-slate-600/50 px-2 py-0.5 font-medium text-slate-300">
-                  {user.role === "admin" ? "Admin" : user.role === "seller" ? "Seller" : "Buyer"}
+                  {user.role === "admin"
+                    ? "Admin"
+                    : user.role === "seller"
+                      ? "Seller"
+                      : "Buyer"}
                 </span>
               </dd>
             </div>
@@ -81,7 +95,9 @@ export default async function ProfilePage() {
             {user.telegramUsername && (
               <div>
                 <dt className="text-slate-500">Telegram</dt>
-                <dd className="font-medium text-slate-200">@{user.telegramUsername}</dd>
+                <dd className="font-medium text-slate-200">
+                  @{user.telegramUsername}
+                </dd>
               </div>
             )}
           </dl>
@@ -98,7 +114,9 @@ export default async function ProfilePage() {
                   key={w.currency}
                   className="flex items-center justify-between rounded-lg border border-slate-700/40 bg-slate-900/50 px-4 py-3"
                 >
-                  <span className="font-medium text-slate-300">{w.currency}</span>
+                  <span className="font-medium text-slate-300">
+                    {w.currency}
+                  </span>
                   <div className="text-right">
                     <p className="font-semibold text-emerald-400">
                       {Number(w.balance).toLocaleString()} {w.currency}

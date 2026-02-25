@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 
 export function BecomeSellerForm() {
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -20,7 +23,10 @@ export function BecomeSellerForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
-      setMessage({ type: "success", text: "You are now a seller. Redirecting..." });
+      setMessage({
+        type: "success",
+        text: "You are now a seller. Redirecting...",
+      });
       router.push("/seller");
       router.refresh();
     } catch (err) {
@@ -34,7 +40,10 @@ export function BecomeSellerForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-6">
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-6"
+    >
       {message && (
         <p
           className={`mb-4 rounded-lg px-3 py-2 text-sm ${
@@ -47,7 +56,8 @@ export function BecomeSellerForm() {
         </p>
       )}
       <p className="mb-6 text-sm text-slate-400">
-        By becoming a seller you can list products (game top-ups, etc.). You will need to complete KYC when we enable it.
+        By becoming a seller you can list products (game top-ups, etc.). You
+        will need to complete KYC when we enable it.
       </p>
       <button
         type="submit"

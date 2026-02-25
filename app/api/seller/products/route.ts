@@ -27,7 +27,10 @@ export async function GET() {
     });
   } catch (err) {
     console.error("Seller products list error:", err);
-    return NextResponse.json({ error: "Failed to load products." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load products." },
+      { status: 500 },
+    );
   }
 }
 
@@ -43,7 +46,7 @@ export async function POST(request: Request) {
     if (!name || !gameName || typeof priceMmk !== "number" || priceMmk < 0) {
       return NextResponse.json(
         { error: "name, gameName and priceMmk (number >= 0) are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
     await connectDB();
@@ -67,6 +70,9 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("Seller product create error:", err);
-    return NextResponse.json({ error: "Failed to create product." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create product." },
+      { status: 500 },
+    );
   }
 }

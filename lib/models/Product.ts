@@ -20,12 +20,17 @@ const productSchema = new Schema<IProduct>(
     name: { type: String, required: true },
     gameName: { type: String, required: true },
     priceMmk: { type: Number, required: true, min: 0 },
-    fulfillmentType: { type: String, enum: ["manual", "api"], default: "manual" },
+    fulfillmentType: {
+      type: String,
+      enum: ["manual", "api"],
+      default: "manual",
+    },
     apiProvider: { type: String },
     apiProductId: { type: String },
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const Product = models.Product ?? model<IProduct>("Product", productSchema);
+export const Product =
+  models.Product ?? model<IProduct>("Product", productSchema);

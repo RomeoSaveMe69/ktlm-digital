@@ -19,7 +19,7 @@ const walletSchema = new Schema<IWallet>(
     balance: { type: Number, default: 0, min: 0 },
     escrowBalance: { type: Number, default: 0, min: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 walletSchema.index({ userId: 1, currency: 1 }, { unique: true });

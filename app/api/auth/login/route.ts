@@ -3,25 +3,37 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
 import { createSession, setSessionCookie } from "@/lib/auth";
+import { apiError, normalizeErrorMessage } from "@/lib/api-utils";
 
+/**
+ * POST /api/auth/login – authenticate with email/password and set session cookie.
+ * Body: { email, password }. Returns { user: { id, email, fullName, role } } or { error }.
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password } = body;
-    if (!email || !password || typeof email !== "string" || typeof password !== "string") {
+    if (
+      !email ||
+      !password ||
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
       return NextResponse.json(
         { error: "Email and password are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     await connectDB();
 
-    const user = await User.findOne({ email: email.trim().toLowerCase() }).select("+passwordHash");
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    }).select("+passwordHash");
     if (!user || !user.passwordHash) {
       return NextResponse.json(
         { error: "Invalid email or password." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -29,7 +41,7 @@ export async function POST(request: Request) {
     if (!valid) {
       return NextResponse.json(
         { error: "Invalid email or password." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -49,16 +61,13 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
     console.error("Login error:", err);
-    let userMessage: string;
-    if (message.includes("Authentication failed") || message.includes("bad auth") || message.includes("auth failed")) {
-      userMessage = "Database authentication failed. Check username and password.";
-    } else if (message.includes("connect") || message.includes("MongoNetworkError") || message.includes("MongoServerError")) {
-      userMessage = "Database connection failed. Check MongoDB Atlas network access (allow 0.0.0.0/0).";
-    } else {
-      userMessage = message.length > 200 ? "Login failed. Please try again." : message;
-    }
-    return NextResponse.json({ error: userMessage }, { status: 500 });
+    const userMessage = normalizeErrorMessage(err);
+    return apiError(
+      userMessage.includes("Database")
+        ? userMessage
+        : "Login failed. Please try again.",
+      500,
+    );
   }
 }

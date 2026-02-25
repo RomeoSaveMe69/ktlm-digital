@@ -1,21 +1,14 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getJwtSecret, isProduction, SESSION_COOKIE_NAME } from "@/lib/config";
 
-const COOKIE_NAME = "ktlm_session";
+const COOKIE_NAME = SESSION_COOKIE_NAME;
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-function getSecret(): Uint8Array {
-  const raw = process.env.JWT_SECRET ?? process.env["JWT_SECRET"] ?? "";
-  const secret = typeof raw === "string" ? raw.trim() : "";
-  if (!secret) {
-    console.warn("[KTLM] JWT_SECRET is empty. Set JWT_SECRET in .env.local or Vercel → Settings → Environment Variables.");
-    return new TextEncoder().encode("ktlm-default-change-in-production");
-  }
-  return new TextEncoder().encode(secret);
-}
-
-/** Session/JWT payload: used by getSession() and API routes to read current user role (buyer | seller | admin). */
+/**
+ * Session/JWT payload: used by getSession() and API routes to read current user role (buyer | seller | admin).
+ */
 export interface SessionPayload {
   userId: string;
   email: string;
@@ -24,6 +17,11 @@ export interface SessionPayload {
   exp?: number;
 }
 
+/**
+ * Create a signed JWT for the given user payload. Used after login/signup.
+ * @param payload - userId, email, role
+ * @returns Signed JWT string
+ */
 export async function createSession(payload: SessionPayload): Promise<string> {
   const token = await new SignJWT({
     userId: payload.userId,
@@ -33,13 +31,18 @@ export async function createSession(payload: SessionPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
-    .sign(getSecret());
+    .sign(getJwtSecret());
   return token;
 }
 
-export async function verifySession(token: string): Promise<SessionPayload | null> {
+/**
+ * Verify a JWT and return the payload, or null if invalid/expired.
+ */
+export async function verifySession(
+  token: string,
+): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return {
       userId: payload.userId as string,
       email: payload.email as string,
@@ -50,6 +53,9 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
   }
 }
 
+/**
+ * Get the current session from the cookie. Returns null if not logged in or token invalid.
+ */
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
@@ -57,17 +63,19 @@ export async function getSession(): Promise<SessionPayload | null> {
   return verifySession(token);
 }
 
+/** Set the session cookie after login/signup. */
 export async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction(),
     sameSite: "lax",
     maxAge: MAX_AGE,
     path: "/",
   });
 }
 
+/** Clear the session cookie (logout). */
 export async function deleteSessionCookie() {
   const cookieStore = await cookies();
   cookieStore.delete(COOKIE_NAME);
@@ -75,7 +83,9 @@ export async function deleteSessionCookie() {
 
 export { COOKIE_NAME };
 
-/** Only allow admin role; redirect otherwise. Call in admin layout. */
+/**
+ * Ensure the current user is admin; redirect to /login otherwise. Use in admin layout.
+ */
 export async function requireAdmin(): Promise<void> {
   const session = await getSession();
   if (!session || session.role !== "admin") {
@@ -83,7 +93,9 @@ export async function requireAdmin(): Promise<void> {
   }
 }
 
-/** Only allow seller or admin; redirect otherwise. Call in seller layout. */
+/**
+ * Ensure the current user is seller or admin; redirect to /profile otherwise. Use in seller layout.
+ */
 export async function requireSeller(): Promise<void> {
   const session = await getSession();
   if (!session || (session.role !== "seller" && session.role !== "admin")) {

@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Kone The Lay Myar Digital | KTLM Digital",
-  description: "KTLM Digital – P2P digital goods & game top-ups. Secure escrow, Telegram notifications.",
+  description:
+    "KTLM Digital – P2P digital goods & game top-ups. Secure escrow, Telegram notifications.",
 };
 
 export default function RootLayout({

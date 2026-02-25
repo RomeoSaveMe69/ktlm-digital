@@ -36,6 +36,9 @@ export async function GET() {
     });
   } catch (err) {
     console.error("Admin products list error:", err);
-    return NextResponse.json({ error: "Failed to load products." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load products." },
+      { status: 500 },
+    );
   }
 }

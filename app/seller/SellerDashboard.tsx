@@ -14,7 +14,10 @@ type ProductItem = {
 export function SellerDashboard() {
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ProductItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -27,7 +30,10 @@ export function SellerDashboard() {
       if (!res.ok) throw new Error(data.error ?? "Failed to load");
       setProducts(data.products ?? []);
     } catch (e) {
-      setMessage({ type: "error", text: e instanceof Error ? e.message : "Failed to load products." });
+      setMessage({
+        type: "error",
+        text: e instanceof Error ? e.message : "Failed to load products.",
+      });
     } finally {
       setLoading(false);
     }
@@ -43,11 +49,20 @@ export function SellerDashboard() {
     e.preventDefault();
     clearMessage();
     const form = e.currentTarget;
-    const name = (form.querySelector('[name="name"]') as HTMLInputElement).value.trim();
-    const gameName = (form.querySelector('[name="gameName"]') as HTMLInputElement).value.trim();
-    const priceMmk = Number((form.querySelector('[name="priceMmk"]') as HTMLInputElement).value);
+    const name = (
+      form.querySelector('[name="name"]') as HTMLInputElement
+    ).value.trim();
+    const gameName = (
+      form.querySelector('[name="gameName"]') as HTMLInputElement
+    ).value.trim();
+    const priceMmk = Number(
+      (form.querySelector('[name="priceMmk"]') as HTMLInputElement).value,
+    );
     if (!name || !gameName || Number.isNaN(priceMmk) || priceMmk < 0) {
-      setMessage({ type: "error", text: "Name, game name and valid price (MMK) are required." });
+      setMessage({
+        type: "error",
+        text: "Name, game name and valid price (MMK) are required.",
+      });
       return;
     }
     setLoading(true);
@@ -55,7 +70,12 @@ export function SellerDashboard() {
       const res = await fetch("/api/seller/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, gameName, priceMmk, fulfillmentType: "manual" }),
+        body: JSON.stringify({
+          name,
+          gameName,
+          priceMmk,
+          fulfillmentType: "manual",
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Create failed");
@@ -64,7 +84,10 @@ export function SellerDashboard() {
       form.reset();
       loadProducts();
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Create failed." });
+      setMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Create failed.",
+      });
     } finally {
       setLoading(false);
     }
@@ -75,11 +98,20 @@ export function SellerDashboard() {
     if (!editing) return;
     clearMessage();
     const form = e.currentTarget;
-    const name = (form.querySelector('[name="name"]') as HTMLInputElement).value.trim();
-    const gameName = (form.querySelector('[name="gameName"]') as HTMLInputElement).value.trim();
-    const priceMmk = Number((form.querySelector('[name="priceMmk"]') as HTMLInputElement).value);
+    const name = (
+      form.querySelector('[name="name"]') as HTMLInputElement
+    ).value.trim();
+    const gameName = (
+      form.querySelector('[name="gameName"]') as HTMLInputElement
+    ).value.trim();
+    const priceMmk = Number(
+      (form.querySelector('[name="priceMmk"]') as HTMLInputElement).value,
+    );
     if (!name || !gameName || Number.isNaN(priceMmk) || priceMmk < 0) {
-      setMessage({ type: "error", text: "Name, game name and valid price (MMK) are required." });
+      setMessage({
+        type: "error",
+        text: "Name, game name and valid price (MMK) are required.",
+      });
       return;
     }
     setLoading(true);
@@ -95,7 +127,10 @@ export function SellerDashboard() {
       setEditing(null);
       loadProducts();
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Update failed." });
+      setMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Update failed.",
+      });
     } finally {
       setLoading(false);
     }
@@ -106,13 +141,18 @@ export function SellerDashboard() {
     setDeletingId(id);
     clearMessage();
     try {
-      const res = await fetch(`/api/seller/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/seller/products/${id}`, {
+        method: "DELETE",
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Delete failed");
       setMessage({ type: "success", text: "Product deleted." });
       loadProducts();
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Delete failed." });
+      setMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Delete failed.",
+      });
     } finally {
       setDeletingId(null);
     }
@@ -124,7 +164,11 @@ export function SellerDashboard() {
         <h1 className="text-xl font-bold text-slate-100">My Products</h1>
         <button
           type="button"
-          onClick={() => { setShowForm(true); setEditing(null); clearMessage(); }}
+          onClick={() => {
+            setShowForm(true);
+            setEditing(null);
+            clearMessage();
+          }}
           className="rounded-xl bg-emerald-500/20 px-4 py-2 font-medium text-emerald-400 ring-1 ring-emerald-500/50 hover:bg-emerald-500/30"
         >
           + Add Product
@@ -134,7 +178,9 @@ export function SellerDashboard() {
       {message && (
         <p
           className={`rounded-lg px-3 py-2 text-sm ${
-            message.type === "success" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+            message.type === "success"
+              ? "bg-emerald-500/20 text-emerald-400"
+              : "bg-red-500/20 text-red-400"
           }`}
         >
           {message.text}
@@ -148,22 +194,53 @@ export function SellerDashboard() {
           </h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm text-slate-400">Product name</label>
-              <input name="name" type="text" required className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100" />
+              <label className="mb-1 block text-sm text-slate-400">
+                Product name
+              </label>
+              <input
+                name="name"
+                type="text"
+                required
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+              />
             </div>
             <div>
-              <label className="mb-1 block text-sm text-slate-400">Game name</label>
-              <input name="gameName" type="text" required className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100" />
+              <label className="mb-1 block text-sm text-slate-400">
+                Game name
+              </label>
+              <input
+                name="gameName"
+                type="text"
+                required
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+              />
             </div>
             <div>
-              <label className="mb-1 block text-sm text-slate-400">Price (MMK)</label>
-              <input name="priceMmk" type="number" min={0} step={1} required className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100" />
+              <label className="mb-1 block text-sm text-slate-400">
+                Price (MMK)
+              </label>
+              <input
+                name="priceMmk"
+                type="number"
+                min={0}
+                step={1}
+                required
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+              />
             </div>
             <div className="flex gap-2">
-              <button type="submit" disabled={loading} className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50">
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
                 Create
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-slate-600 px-4 py-2 text-slate-300 hover:bg-slate-700">
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="rounded-lg border border-slate-600 px-4 py-2 text-slate-300 hover:bg-slate-700"
+              >
                 Cancel
               </button>
             </div>
@@ -178,22 +255,56 @@ export function SellerDashboard() {
           </h2>
           <form onSubmit={handleUpdate} className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm text-slate-400">Product name</label>
-              <input name="name" type="text" defaultValue={editing.name} required className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100" />
+              <label className="mb-1 block text-sm text-slate-400">
+                Product name
+              </label>
+              <input
+                name="name"
+                type="text"
+                defaultValue={editing.name}
+                required
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+              />
             </div>
             <div>
-              <label className="mb-1 block text-sm text-slate-400">Game name</label>
-              <input name="gameName" type="text" defaultValue={editing.gameName} required className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100" />
+              <label className="mb-1 block text-sm text-slate-400">
+                Game name
+              </label>
+              <input
+                name="gameName"
+                type="text"
+                defaultValue={editing.gameName}
+                required
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+              />
             </div>
             <div>
-              <label className="mb-1 block text-sm text-slate-400">Price (MMK)</label>
-              <input name="priceMmk" type="number" min={0} step={1} defaultValue={editing.priceMmk} required className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100" />
+              <label className="mb-1 block text-sm text-slate-400">
+                Price (MMK)
+              </label>
+              <input
+                name="priceMmk"
+                type="number"
+                min={0}
+                step={1}
+                defaultValue={editing.priceMmk}
+                required
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+              />
             </div>
             <div className="flex gap-2">
-              <button type="submit" disabled={loading} className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50">
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
                 Save
               </button>
-              <button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-slate-600 px-4 py-2 text-slate-300 hover:bg-slate-700">
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className="rounded-lg border border-slate-600 px-4 py-2 text-slate-300 hover:bg-slate-700"
+              >
                 Cancel
               </button>
             </div>
@@ -212,12 +323,18 @@ export function SellerDashboard() {
             >
               <div>
                 <p className="font-medium text-slate-200">{p.name}</p>
-                <p className="text-sm text-slate-500">{p.gameName} · {p.priceMmk.toLocaleString()} MMK</p>
+                <p className="text-sm text-slate-500">
+                  {p.gameName} · {p.priceMmk.toLocaleString()} MMK
+                </p>
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => { setEditing(p); setShowForm(false); clearMessage(); }}
+                  onClick={() => {
+                    setEditing(p);
+                    setShowForm(false);
+                    clearMessage();
+                  }}
                   className="rounded-lg border border-slate-600 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
                 >
                   Edit
@@ -236,7 +353,9 @@ export function SellerDashboard() {
         </ul>
       )}
       {!loading && products.length === 0 && !showForm && (
-        <p className="text-slate-500">No products yet. Click &quot;Add Product&quot; to create one.</p>
+        <p className="text-slate-500">
+          No products yet. Click &quot;Add Product&quot; to create one.
+        </p>
       )}
     </div>
   );

@@ -23,7 +23,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
     if (user.role !== "buyer") {
-      return NextResponse.json({ error: "Only buyers can request to become a seller." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Only buyers can request to become a seller." },
+        { status: 400 },
+      );
     }
 
     user.role = "seller";
@@ -32,6 +35,9 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ role: user.role });
   } catch (err) {
     console.error("Role update error:", err);
-    return NextResponse.json({ error: "Failed to update role." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update role." },
+      { status: 500 },
+    );
   }
 }

@@ -52,7 +52,9 @@ export function DepositApprovals({ deposits }: { deposits: Deposit[] }) {
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-700/80 bg-slate-800/80">
-              <th className="px-4 py-3 font-medium text-slate-400">Reference</th>
+              <th className="px-4 py-3 font-medium text-slate-400">
+                Reference
+              </th>
               <th className="px-4 py-3 font-medium text-slate-400">Amount</th>
               <th className="px-4 py-3 font-medium text-slate-400">Created</th>
               <th className="px-4 py-3 font-medium text-slate-400">Slip</th>
@@ -65,7 +67,9 @@ export function DepositApprovals({ deposits }: { deposits: Deposit[] }) {
                 key={d.id}
                 className="border-b border-slate-700/40 transition hover:bg-slate-800/60"
               >
-                <td className="px-4 py-3 font-mono text-slate-300">{d.referenceId}</td>
+                <td className="px-4 py-3 font-mono text-slate-300">
+                  {d.referenceId}
+                </td>
                 <td className="px-4 py-3 text-slate-200">
                   {d.amount.toLocaleString()} {d.currency}
                 </td>

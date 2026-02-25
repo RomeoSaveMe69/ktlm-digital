@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const STATUSES = ["pending", "processing", "completed", "cancelled", "disputed"] as const;
+const STATUSES = [
+  "pending",
+  "processing",
+  "completed",
+  "cancelled",
+  "disputed",
+] as const;
 
 export function AdminOrderActions({
   orderId,
@@ -33,7 +39,9 @@ export function AdminOrderActions({
 
   return (
     <div>
-      <p className="mb-2 text-sm text-slate-500">Change status (admin intervene)</p>
+      <p className="mb-2 text-sm text-slate-500">
+        Change status (admin intervene)
+      </p>
       <select
         value={currentStatus}
         onChange={(e) => handleStatusChange(e.target.value)}
