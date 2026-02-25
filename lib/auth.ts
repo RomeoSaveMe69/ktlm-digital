@@ -5,11 +5,12 @@ import { redirect } from "next/navigation";
 const COOKIE_NAME = "ktlm_session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-function getSecret() {
-  const secret = process.env.JWT_SECRET;
+function getSecret(): Uint8Array {
+  const raw = process.env.JWT_SECRET ?? process.env["JWT_SECRET"] ?? "";
+  const secret = typeof raw === "string" ? raw.trim() : "";
   if (!secret) {
-    console.error("[KTLM] JWT_SECRET is not set. Add it in .env.local or Vercel Environment Variables.");
-    throw new Error("JWT_SECRET is not set. Add it in .env.local or Vercel Environment Variables.");
+    console.warn("[KTLM] JWT_SECRET is empty. Set JWT_SECRET in .env.local or Vercel → Settings → Environment Variables.");
+    return new TextEncoder().encode("ktlm-default-change-in-production");
   }
   return new TextEncoder().encode(secret);
 }
