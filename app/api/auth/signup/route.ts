@@ -64,23 +64,18 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "";
+    const message = err instanceof Error ? err.message : String(err);
     console.error("Signup error:", err);
+    let userMessage: string;
     if (message.includes("MONGODB_URI") || message.includes("JWT_SECRET")) {
-      return NextResponse.json(
-        { error: "Server configuration error. Please add MONGODB_URI and JWT_SECRET in Vercel Environment Variables." },
-        { status: 500 }
-      );
+      userMessage = "Server configuration error. Please add MONGODB_URI and JWT_SECRET in .env.local or Vercel Environment Variables.";
+    } else if (message.includes("connect") || message.includes("MongoNetworkError") || message.includes("MongoServerError")) {
+      userMessage = "Database connection failed. Check MONGODB_URI and MongoDB Atlas network access (allow 0.0.0.0/0).";
+    } else if (message.includes("E11000") || message.includes("duplicate key")) {
+      userMessage = "An account with this email already exists.";
+    } else {
+      userMessage = message.length > 200 ? "Sign up failed. Please try again." : message;
     }
-    if (message.includes("connect") || message.includes("MongoNetworkError")) {
-      return NextResponse.json(
-        { error: "Database connection failed. Check MONGODB_URI and MongoDB Atlas network access (allow 0.0.0.0/0)." },
-        { status: 500 }
-      );
-    }
-    return NextResponse.json(
-      { error: "Sign up failed. Please try again." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: userMessage }, { status: 500 });
   }
 }

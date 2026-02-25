@@ -24,13 +24,22 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Login failed");
+      let data: { error?: string; user?: unknown } = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = { error: "Invalid response from server." };
+      }
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error ?? "Login failed." });
+        setLoading(false);
+        return;
+      }
       window.location.href = "/profile";
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Invalid email or password.",
+        text: err instanceof Error ? err.message : "Network error. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -59,13 +68,22 @@ export default function LoginPage() {
           fullName: fullName.trim() || undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Sign up failed");
+      let data: { error?: string; user?: unknown } = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = { error: "Invalid response from server." };
+      }
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error ?? "Sign up failed." });
+        setLoading(false);
+        return;
+      }
       window.location.href = "/profile";
     } catch (err) {
       setMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Sign up failed.",
+        text: err instanceof Error ? err.message : "Network error. Please try again.",
       });
     } finally {
       setLoading(false);

@@ -15,7 +15,9 @@ if (process.env.NODE_ENV !== "production") global.mongoose = cached;
 export async function connectDB(): Promise<typeof mongoose> {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    throw new Error("MONGODB_URI is not set. Add it in Vercel → Settings → Environment Variables.");
+    const msg = "MONGODB_URI is not set. Add it in .env.local (local) or Vercel → Settings → Environment Variables (production).";
+    console.error("[KTLM] Database connection failed:", msg);
+    throw new Error(msg);
   }
   if (cached.conn) return cached.conn;
   if (!cached.promise) {

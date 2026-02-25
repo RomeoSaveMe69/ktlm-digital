@@ -7,7 +7,10 @@ const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 function getSecret() {
   const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error("JWT_SECRET is not set");
+  if (!secret) {
+    console.error("[KTLM] JWT_SECRET is not set. Add it in .env.local or Vercel Environment Variables.");
+    throw new Error("JWT_SECRET is not set. Add it in .env.local or Vercel Environment Variables.");
+  }
   return new TextEncoder().encode(secret);
 }
 
