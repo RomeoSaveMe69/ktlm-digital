@@ -1,3 +1,20 @@
+# Vercel မှာ Supabase Error ဖြစ်ရင်
+
+**Error:** `@supabase/ssr: Your project's URL and API key are required`
+
+ဒီ project က **Supabase မသုံးပါ။** MongoDB + JWT ပဲ သုံးပါတယ်။ Error က Vercel ရဲ့ **env vars** နဲ့ **build cache** ကြောင့် ဖြစ်နိုင်ပါတယ်။
+
+1. **Vercel Dashboard** → သင့် Project → **Settings** → **Environment Variables**
+   - `NEXT_PUBLIC_SUPABASE_URL` နဲ့ `NEXT_PUBLIC_SUPABASE_ANON_KEY` (သို့မဟုတ် ဆိုင်ရာ Supabase env တွေ) ရှိရင် **ဖျက်ပါ**။
+   - ထားရမယ့် env တွေ: `MONGODB_URI` နဲ့ `JWT_SECRET` ပဲ။
+
+2. **Redeploy** လုပ်ပြီး **Clear cache** လုပ်ပါ။  
+   - **Deployments** tab → နောက်ဆုံး deployment မှာ **⋯** → **Redeploy** → **Redeploy with existing Build Cache** ကို **မရွေးပါနဲ့** (cache ဖျက်ပြီး ပြန် build လုပ်မယ်)။
+
+3. သေချာစေရန် local မှာ `npm run build` ပြန် run ကြည့်ပါ။ Supabase ကုဒ်/package မရှိပါက build အောင်ရပါမယ်။
+
+---
+
 # Weblive / Production မှာ 404 ဖြစ်ရင်
 
 ## ၁. Subpath မှာ deploy လုပ်ထားရင် (ဥပမာ yoursite.com/konethelaymyar)
@@ -39,7 +56,7 @@ Build အောင်ပြီး output မှာ ဒီ route တွေ ပါ
 - `/login`
 - `/profile`
 - `/admin`
-- `/auth/callback`
+- `/api/auth/*`, `/api/orders`
 
 ဒါတွေ မပါရင် branch / folder မှားနေတာ စစ်ပါ။
 

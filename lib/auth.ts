@@ -1,21 +1,79 @@
+import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-/**
- * Server-side guard: only users with role 'admin' in profiles table may proceed.
- * Call this at the top of admin layout or pages.
- *
- * When Supabase is configured:
- * 1. Get session via createServerClient().auth.getSession()
- * 2. If !session → redirect('/login')
- * 3. Fetch profile from public.profiles where id = session.user.id
- * 4. If profile.role !== 'admin' → redirect('/') or redirect('/403')
- */
+const COOKIE_NAME = "ktlm_session";
+const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+
+function getSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET is not set");
+  return new TextEncoder().encode(secret);
+}
+
+export interface SessionPayload {
+  userId: string;
+  email: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+}
+
+export async function createSession(payload: SessionPayload): Promise<string> {
+  const token = await new SignJWT({
+    userId: payload.userId,
+    email: payload.email,
+    role: payload.role,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(`${MAX_AGE}s`)
+    .sign(getSecret());
+  return token;
+}
+
+export async function verifySession(token: string): Promise<SessionPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, getSecret());
+    return {
+      userId: payload.userId as string,
+      email: payload.email as string,
+      role: payload.role as string,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getSession(): Promise<SessionPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  if (!token) return null;
+  return verifySession(token);
+}
+
+export async function setSessionCookie(token: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: MAX_AGE,
+    path: "/",
+  });
+}
+
+export async function deleteSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(COOKIE_NAME);
+}
+
+export { COOKIE_NAME };
+
+/** Only allow admin role; redirect otherwise. Call in admin layout. */
 export async function requireAdmin(): Promise<void> {
-  // TODO: Replace with Supabase auth + profile check when configured
-  // const supabase = createServerClient(...);
-  // const { data: { session } } = await supabase.auth.getSession();
-  // if (!session) redirect('/login');
-  // const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-  // if (profile?.role !== 'admin') redirect('/');
-  return;
+  const session = await getSession();
+  if (!session || session.role !== "admin") {
+    redirect("/login");
+  }
 }

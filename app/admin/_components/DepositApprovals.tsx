@@ -19,7 +19,7 @@ export function DepositApprovals({ deposits }: { deposits: Deposit[] }) {
   async function handleApprove(id: string) {
     setLoadingId(id);
     try {
-      // TODO: Call API/Supabase to approve transaction (set status = 'approved', approved_by, approved_at)
+      // TODO: Call API to approve transaction (MongoDB: set status = 'approved')
       await new Promise((r) => setTimeout(r, 400));
       setList((prev) => prev.filter((d) => d.id !== id));
     } finally {
@@ -30,7 +30,7 @@ export function DepositApprovals({ deposits }: { deposits: Deposit[] }) {
   async function handleReject(id: string) {
     setLoadingId(id);
     try {
-      // TODO: Call API/Supabase to reject transaction (set status = 'rejected')
+      // TODO: Call API to reject transaction (MongoDB: set status = 'rejected')
       await new Promise((r) => setTimeout(r, 400));
       setList((prev) => prev.filter((d) => d.id !== id));
     } finally {

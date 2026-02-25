@@ -1,29 +1,28 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth";
+import { connectDB } from "@/lib/db";
+import { User } from "@/lib/models/User";
+import { Wallet } from "@/lib/models/Wallet";
 import { ProfileSignOut } from "./ProfileSignOut";
 
 export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
 
+  await connectDB();
+  const user = await User.findById(session.userId)
+    .select("-passwordHash")
+    .lean();
   if (!user) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, kyc_status, telegram_username, full_name, created_at")
-    .eq("id", user.id)
-    .single();
-
-  const { data: wallets } = await supabase
-    .from("wallets")
-    .select("currency, balance, escrow_balance")
-    .eq("user_id", user.id)
-    .order("currency");
+  const wallets = await Wallet.find({ userId: user._id })
+    .select("currency balance escrowBalance")
+    .lean();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 safe-area-pb">
@@ -42,7 +41,6 @@ export default async function ProfilePage() {
       <main className="px-4 py-6">
         <h1 className="text-xl font-bold text-slate-100 mb-6">Profile</h1>
 
-        {/* User details */}
         <section className="mb-6 rounded-xl border border-slate-700/60 bg-slate-800/50 p-4">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
             Account
@@ -54,15 +52,13 @@ export default async function ProfilePage() {
             </div>
             <div>
               <dt className="text-slate-500">Name</dt>
-              <dd className="font-medium text-slate-200">
-                {profile?.full_name ?? user.user_metadata?.full_name ?? "—"}
-              </dd>
+              <dd className="font-medium text-slate-200">{user.fullName ?? "—"}</dd>
             </div>
             <div>
               <dt className="text-slate-500">Role</dt>
               <dd>
                 <span className="inline-flex rounded-md bg-slate-600/50 px-2 py-0.5 font-medium text-slate-300 capitalize">
-                  {profile?.role ?? "buyer"}
+                  {user.role}
                 </span>
               </dd>
             </div>
@@ -71,27 +67,26 @@ export default async function ProfilePage() {
               <dd>
                 <span
                   className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                    profile?.kyc_status === "approved"
+                    user.kycStatus === "approved"
                       ? "bg-emerald-500/20 text-emerald-400"
-                      : profile?.kyc_status === "rejected"
+                      : user.kycStatus === "rejected"
                         ? "bg-red-500/20 text-red-400"
                         : "bg-amber-500/20 text-amber-400"
                   }`}
                 >
-                  {profile?.kyc_status ?? "pending"}
+                  {user.kycStatus}
                 </span>
               </dd>
             </div>
-            {profile?.telegram_username && (
+            {user.telegramUsername && (
               <div>
                 <dt className="text-slate-500">Telegram</dt>
-                <dd className="font-medium text-slate-200">@{profile.telegram_username}</dd>
+                <dd className="font-medium text-slate-200">@{user.telegramUsername}</dd>
               </div>
             )}
           </dl>
         </section>
 
-        {/* Balances */}
         <section className="mb-6 rounded-xl border border-slate-700/60 bg-slate-800/50 p-4">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
             Balance
@@ -108,9 +103,9 @@ export default async function ProfilePage() {
                     <p className="font-semibold text-emerald-400">
                       {Number(w.balance).toLocaleString()} {w.currency}
                     </p>
-                    {Number(w.escrow_balance) > 0 && (
+                    {Number(w.escrowBalance) > 0 && (
                       <p className="text-xs text-slate-500">
-                        Escrow: {Number(w.escrow_balance).toLocaleString()}
+                        Escrow: {Number(w.escrowBalance).toLocaleString()}
                       </p>
                     )}
                   </div>
