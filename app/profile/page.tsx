@@ -57,8 +57,8 @@ export default async function ProfilePage() {
             <div>
               <dt className="text-slate-500">Role</dt>
               <dd>
-                <span className="inline-flex rounded-md bg-slate-600/50 px-2 py-0.5 font-medium text-slate-300 capitalize">
-                  {user.role}
+                <span className="inline-flex rounded-md bg-slate-600/50 px-2 py-0.5 font-medium text-slate-300">
+                  {user.role === "admin" ? "Admin" : user.role === "seller" ? "Seller" : "Buyer"}
                 </span>
               </dd>
             </div>

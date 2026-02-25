@@ -15,6 +15,7 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
+/** Session/JWT payload: used by getSession() and API routes to read current user role (buyer | seller | admin). */
 export interface SessionPayload {
   userId: string;
   email: string;
