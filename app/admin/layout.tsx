@@ -3,8 +3,10 @@ import { requireAdmin } from "@/lib/auth";
 
 const SIDEBAR_NAV = [
   { href: "/admin", label: "Dashboard Overview", icon: "📊" },
-  { href: "/admin#deposits", label: "Deposit Approvals", icon: "💰" },
+  { href: "/admin#products", label: "All Products", icon: "🛒" },
+  { href: "/admin#users", label: "All Users", icon: "👥" },
   { href: "/admin#orders", label: "Order Management", icon: "📦" },
+  { href: "/admin#deposits", label: "Deposit Approvals", icon: "💰" },
   { href: "/admin#chat", label: "Chat Monitoring", icon: "💬" },
 ];
 

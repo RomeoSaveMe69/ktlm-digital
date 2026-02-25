@@ -2,12 +2,15 @@ import Link from "next/link";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
 import { Order } from "@/lib/models/Order";
+import { Product } from "@/lib/models/Product";
 import { DepositApprovals } from "./_components/DepositApprovals";
+import { AdminProductsTable } from "./_components/AdminProductsTable";
+import { AdminUsersTable } from "./_components/AdminUsersTable";
 
 export default async function AdminDashboardPage() {
   await connectDB();
 
-  const [userCount, orders, revenueResult] = await Promise.all([
+  const [userCount, orders, revenueResult, allProducts, allUsers] = await Promise.all([
     User.countDocuments(),
     Order.find({ status: { $in: ["pending", "processing", "disputed"] } })
       .sort({ createdAt: -1 })
@@ -18,12 +21,38 @@ export default async function AdminDashboardPage() {
       { $match: { status: "completed" } },
       { $group: { _id: null, total: { $sum: "$platformFeeMmk" } } },
     ]),
+    Product.find().populate("sellerId", "email fullName role").sort({ createdAt: -1 }).lean(),
+    User.find().select("-passwordHash").sort({ createdAt: -1 }).lean(),
   ]);
 
   const pendingOrderCount = await Order.countDocuments({
     status: { $in: ["pending", "processing"] },
   });
   const revenue = revenueResult[0]?.total ?? 0;
+
+  const productsForAdmin = allProducts.map((p) => ({
+    id: p._id.toString(),
+    name: p.name,
+    gameName: p.gameName,
+    priceMmk: p.priceMmk,
+    isActive: p.isActive,
+    seller: p.sellerId
+      ? {
+          id: (p.sellerId as { _id: unknown })._id?.toString?.() ?? "",
+          email: (p.sellerId as { email?: string }).email,
+          fullName: (p.sellerId as { fullName?: string }).fullName,
+          role: (p.sellerId as { role?: string }).role,
+        }
+      : null,
+  }));
+
+  const usersForAdmin = allUsers.map((u) => ({
+    id: u._id.toString(),
+    email: u.email,
+    fullName: u.fullName,
+    role: u.role,
+    kycStatus: u.kycStatus,
+  }));
 
   const STATS = [
     { label: "Total Users", value: userCount.toLocaleString(), sub: "profiles", icon: "👥" },
@@ -66,6 +95,30 @@ export default async function AdminDashboardPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section id="products" className="scroll-mt-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
+          All Products
+        </h2>
+        <p className="mb-4 text-sm text-slate-500">
+          All products from all sellers. You can deactivate or delete.
+        </p>
+        <div className="overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800/50">
+          <AdminProductsTable products={productsForAdmin} />
+        </div>
+      </section>
+
+      <section id="users" className="scroll-mt-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
+          All Users
+        </h2>
+        <p className="mb-4 text-sm text-slate-500">
+          All registered users. You can change role (buyer / seller / admin).
+        </p>
+        <div className="overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800/50">
+          <AdminUsersTable users={usersForAdmin} />
         </div>
       </section>
 

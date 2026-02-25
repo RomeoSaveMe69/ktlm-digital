@@ -81,3 +81,11 @@ export async function requireAdmin(): Promise<void> {
     redirect("/login");
   }
 }
+
+/** Only allow seller or admin; redirect otherwise. Call in seller layout. */
+export async function requireSeller(): Promise<void> {
+  const session = await getSession();
+  if (!session || (session.role !== "seller" && session.role !== "admin")) {
+    redirect("/profile");
+  }
+}
