@@ -33,13 +33,17 @@ export function SellerDashboard() {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/seller/products", {
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache" },
-      });
+      const res = await fetch(
+        `/api/seller/products?t=${Date.now()}`,
+        {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store" },
+          credentials: "same-origin",
+        },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load");
-      setProducts(data.products ?? []);
+      setProducts(Array.isArray(data.products) ? data.products : []);
     } catch (e) {
       setMessage({
         type: "error",

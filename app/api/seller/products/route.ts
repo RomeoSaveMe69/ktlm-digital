@@ -15,16 +15,35 @@ export async function GET() {
     if (!session || (session.role !== "seller" && session.role !== "admin")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    const sellerIdStr = String(session.userId ?? "").trim();
+    if (
+      !sellerIdStr ||
+      !mongoose.Types.ObjectId.isValid(sellerIdStr) ||
+      sellerIdStr.length !== 24
+    ) {
+      return NextResponse.json(
+        { error: "Invalid session. Please log in again." },
+        { status: 401 },
+      );
+    }
+    const sellerIdObj = new mongoose.Types.ObjectId(sellerIdStr);
     await connectDB();
     let rawProducts: unknown[] = [];
     try {
-      rawProducts = await Product.find({ sellerId: session.userId })
+      rawProducts = await Product.find({ sellerId: sellerIdObj })
         .populate("gameId", "title image")
         .sort({ createdAt: -1 })
         .lean();
     } catch (fetchErr) {
       console.error("Seller products fetch/populate error:", fetchErr);
-      return NextResponse.json({ products: [] }, { status: 200 });
+      try {
+        rawProducts = await Product.find({ sellerId: sellerIdObj })
+          .sort({ createdAt: -1 })
+          .lean();
+      } catch (fallbackErr) {
+        console.error("Seller products fallback fetch error:", fallbackErr);
+        return NextResponse.json({ products: [] }, { status: 200 });
+      }
     }
     const products = (Array.isArray(rawProducts) ? rawProducts : []).map(
       (p: unknown) => {
