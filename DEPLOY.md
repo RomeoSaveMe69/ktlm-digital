@@ -7,9 +7,11 @@
 1. **Vercel Dashboard** → သင့် Project → **Settings** → **Environment Variables**
    - `NEXT_PUBLIC_SUPABASE_URL` နဲ့ `NEXT_PUBLIC_SUPABASE_ANON_KEY` (သို့မဟုတ် ဆိုင်ရာ Supabase env တွေ) ရှိရင် **ဖျက်ပါ**။
    - **ထားရမယ့် env (အပြည့်အဝ လိုအပ်ပါတယ်):**
-     - **`MONGODB_URI`** – MongoDB Atlas connection string (ဥပမာ `mongodb+srv://user:pass@cluster.mongodb.net/ktlm_digital?retryWrites=true&w=majority`)
+     - **`MONGODB_URI`** – အတိအကျ ဒီ format သုံးပါ (တစ်ကြောင်းတည်း၊ ရှေ့နောက် space မထည့်ပါနဲ့):  
+       `mongodb+srv://MayLolKyawGyi-DB:LudgKBeBwrS85mev@konethelaymyar.uyhlbu4.mongodb.net/ktlm_digital?retryWrites=true&w=majority`
      - **`JWT_SECRET`** – ရှည်ရှည် random string (ဥပမာ `openssl rand -base64 32` နဲ့ ထုတ်ပါ)
    - ဒီနှစ်ခု မထည့်ရင် Sign up / Login မအောင်ပါ။
+   - **MongoAPIError: URI option '...' cannot be specified with no value** တက်ရင်: MONGODB_URI ကို ပြန်ကူးထည့်ပါ၊ query string ထဲမှာ value မပါတဲ့ option မရှိစေရပါမယ်။ အနီးက format အတိုင်း သုံးပါ။
 
 2. **Redeploy** လုပ်ပြီး **Clear cache** လုပ်ပါ။  
    - **Deployments** tab → နောက်ဆုံး deployment မှာ **⋯** → **Redeploy** → **Redeploy with existing Build Cache** ကို **မရွေးပါနဲ့** (cache ဖျက်ပြီး ပြန် build လုပ်မယ်)။
