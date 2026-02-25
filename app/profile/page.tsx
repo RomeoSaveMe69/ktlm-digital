@@ -118,12 +118,12 @@ export default async function ProfilePage() {
         </section>
 
         <div className="flex flex-col gap-3">
-          {user.role === "buyer" && (
+          {user.role === "admin" && (
             <Link
-              href="/seller/apply"
-              className="rounded-xl border border-emerald-500/50 bg-emerald-500/10 py-3 px-4 text-center font-medium text-emerald-400 transition hover:bg-emerald-500/20"
+              href="/admin"
+              className="rounded-xl border border-purple-500/50 bg-purple-500/10 py-3 px-4 text-center font-medium text-purple-400 transition hover:bg-purple-500/20"
             >
-              Become a Seller
+              Go to Admin Panel
             </Link>
           )}
           {user.role === "seller" && (
@@ -131,7 +131,15 @@ export default async function ProfilePage() {
               href="/seller"
               className="rounded-xl border border-slate-700/60 bg-slate-800/60 py-3 px-4 text-center font-medium text-slate-200 transition hover:bg-slate-800 hover:border-emerald-500/40"
             >
-              Seller Dashboard
+              Go to Seller Dashboard
+            </Link>
+          )}
+          {user.role === "buyer" && (
+            <Link
+              href="/seller/apply"
+              className="rounded-xl border border-emerald-500/50 bg-emerald-500/10 py-3 px-4 text-center font-medium text-emerald-400 transition hover:bg-emerald-500/20"
+            >
+              Become a Seller
             </Link>
           )}
           <Link
