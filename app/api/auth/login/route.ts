@@ -54,6 +54,8 @@ export async function POST(request: Request) {
     let userMessage: string;
     if (message.includes("MONGODB_URI") || message.includes("JWT_SECRET")) {
       userMessage = "Server configuration error. Add MONGODB_URI and JWT_SECRET in .env.local or Vercel Environment Variables.";
+    } else if (message.includes("Authentication failed") || message.includes("bad auth") || message.includes("auth failed")) {
+      userMessage = "Database authentication failed. Check MONGODB_URI username and password in .env.local or Vercel.";
     } else if (message.includes("connect") || message.includes("MongoNetworkError") || message.includes("MongoServerError")) {
       userMessage = "Database connection failed. Check MONGODB_URI and MongoDB Atlas network access (allow 0.0.0.0/0).";
     } else {
