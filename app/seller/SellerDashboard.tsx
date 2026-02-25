@@ -340,7 +340,7 @@ export function SellerDashboard() {
               <input
                 name="title"
                 type="text"
-                defaultValue={editing.title}
+                defaultValue={editing.title ?? ""}
                 required
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
               />
@@ -355,7 +355,7 @@ export function SellerDashboard() {
                   type="number"
                   min={0}
                   step={1}
-                  defaultValue={editing.price}
+                  defaultValue={editing.price ?? 0}
                   required
                   className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
                 />
@@ -369,7 +369,7 @@ export function SellerDashboard() {
                   type="number"
                   min={0}
                   step={1}
-                  defaultValue={editing.inStock}
+                  defaultValue={editing.inStock ?? 0}
                   required
                   className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
                 />
@@ -382,7 +382,7 @@ export function SellerDashboard() {
               <input
                 name="deliveryTime"
                 type="text"
-                defaultValue={editing.deliveryTime}
+                defaultValue={editing.deliveryTime ?? ""}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
               />
             </div>
@@ -416,10 +416,11 @@ export function SellerDashboard() {
               className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-700/60 bg-slate-800/50 p-4"
             >
               <div>
-                <p className="font-medium text-slate-200">{p.title}</p>
+                <p className="font-medium text-slate-200">{p.title ?? "—"}</p>
                 <p className="text-sm text-slate-500">
-                  {p.gameTitle} · {p.price.toLocaleString()} MMK · Stock:{" "}
-                  {p.inStock}
+                  {p.gameTitle ?? "Unknown Game"} ·{" "}
+                  {(p.price ?? 0).toLocaleString()} MMK · Stock:{" "}
+                  {p.inStock ?? 0}
                 </p>
               </div>
               <div className="flex gap-2">

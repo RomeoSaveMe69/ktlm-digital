@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
 import { Order } from "@/lib/models/Order";
 import { Product } from "@/lib/models/Product";
+import { mapProductToSafeShape } from "@/lib/product-utils";
 import { DepositApprovals } from "./_components/DepositApprovals";
 import { AdminProductsTable } from "./_components/AdminProductsTable";
 import { AdminUsersTable } from "./_components/AdminUsersTable";
@@ -10,8 +11,8 @@ import { AdminUsersTable } from "./_components/AdminUsersTable";
 export default async function AdminDashboardPage() {
   await connectDB();
 
-  const [userCount, orders, revenueResult, allProducts, allUsers] =
-    await Promise.all([
+  const [userCount, orderResult, revenueResult, productsResult, allUsers] =
+    await Promise.allSettled([
       User.countDocuments(),
       Order.find({ status: { $in: ["pending", "processing", "disputed"] } })
         .sort({ createdAt: -1 })
@@ -30,40 +31,66 @@ export default async function AdminDashboardPage() {
       User.find().select("-passwordHash").sort({ createdAt: -1 }).lean(),
     ]);
 
+  const userCountVal = userCount.status === "fulfilled" ? userCount.value : 0;
+  const ordersVal = orderResult.status === "fulfilled" ? orderResult.value : [];
+  const revenueResultVal =
+    revenueResult.status === "fulfilled" ? revenueResult.value : [];
+  const allUsersVal = allUsers.status === "fulfilled" ? allUsers.value : [];
+
+  let allProducts: unknown[] = [];
+  if (
+    productsResult.status === "fulfilled" &&
+    Array.isArray(productsResult.value)
+  ) {
+    allProducts = productsResult.value;
+  } else if (productsResult.status === "rejected") {
+    console.error("Admin products fetch error:", productsResult.reason);
+  }
+
+  const orders = Array.isArray(ordersVal) ? ordersVal : [];
+
   const pendingOrderCount = await Order.countDocuments({
     status: { $in: ["pending", "processing"] },
   });
-  const revenue = revenueResult[0]?.total ?? 0;
+  const revenue =
+    (Array.isArray(revenueResultVal) && revenueResultVal[0]?.total) ?? 0;
 
-  const productsForAdmin = allProducts.map((p) => ({
-    id: p._id.toString(),
-    title: (p as { title: string }).title,
-    gameTitle: (p.gameId as { title?: string })?.title ?? "",
-    price: (p as { price: number }).price,
-    inStock: (p as { inStock: number }).inStock,
-    status: (p as { status: string }).status,
-    seller: p.sellerId
-      ? {
-          id: (p.sellerId as { _id?: unknown })?._id?.toString?.() ?? "",
-          email: (p.sellerId as { email?: string }).email,
-          fullName: (p.sellerId as { fullName?: string }).fullName,
-          role: (p.sellerId as { role?: string }).role,
-        }
-      : null,
-  }));
+  const productsForAdmin = allProducts.map((p: unknown) => {
+    const row = mapProductToSafeShape(
+      p as Parameters<typeof mapProductToSafeShape>[0],
+    );
+    const doc = p as { sellerId?: unknown };
+    const seller = doc.sellerId as
+      | { _id?: unknown; email?: string; fullName?: string; role?: string }
+      | null
+      | undefined;
+    return {
+      ...row,
+      seller: seller
+        ? {
+            id: seller._id?.toString?.() ?? "",
+            email: seller.email,
+            fullName: seller.fullName,
+            role: seller.role,
+          }
+        : null,
+    };
+  });
 
-  const usersForAdmin = allUsers.map((u) => ({
-    id: u._id.toString(),
-    email: u.email,
-    fullName: u.fullName,
-    role: u.role,
-    kycStatus: u.kycStatus,
-  }));
+  const usersForAdmin = (Array.isArray(allUsersVal) ? allUsersVal : []).map(
+    (u) => ({
+      id: u._id.toString(),
+      email: u.email,
+      fullName: u.fullName,
+      role: u.role,
+      kycStatus: u.kycStatus,
+    }),
+  );
 
   const STATS = [
     {
       label: "Total Users",
-      value: userCount.toLocaleString(),
+      value: String(userCountVal).toLocaleString(),
       sub: "profiles",
       icon: "👥",
     },

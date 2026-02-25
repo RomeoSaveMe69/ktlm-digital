@@ -87,38 +87,42 @@ export function AdminProductsTable({ products }: { products: ProductRow[] }) {
                 className="border-b border-slate-700/40 transition hover:bg-slate-800/60"
               >
                 <td className="px-4 py-3 font-medium text-slate-200">
-                  {p.title}
+                  {p.title ?? "—"}
                 </td>
-                <td className="px-4 py-3 text-slate-400">{p.gameTitle}</td>
+                <td className="px-4 py-3 text-slate-400">
+                  {p.gameTitle ?? "Unknown Game"}
+                </td>
                 <td className="px-4 py-3 text-slate-300">
-                  {p.price.toLocaleString()}
+                  {(p.price ?? 0).toLocaleString()}
                 </td>
-                <td className="px-4 py-3 text-slate-400">{p.inStock}</td>
+                <td className="px-4 py-3 text-slate-400">{p.inStock ?? "—"}</td>
                 <td className="px-4 py-3 text-slate-400">
                   {p.seller?.email ?? p.seller?.fullName ?? "—"}
                 </td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                      p.status === "active"
+                      (p.status ?? "inactive") === "active"
                         ? "bg-emerald-500/20 text-emerald-400"
                         : "bg-slate-600/50 text-slate-500"
                     }`}
                   >
-                    {p.status}
+                    {p.status ?? "inactive"}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => handleToggleStatus(p.id, p.status)}
+                      onClick={() =>
+                        handleToggleStatus(p.id, p.status ?? "inactive")
+                      }
                       disabled={loadingId === p.id}
                       className="text-xs text-amber-400 hover:text-amber-300 disabled:opacity-50"
                     >
                       {loadingId === p.id
                         ? "…"
-                        : p.status === "active"
+                        : (p.status ?? "inactive") === "active"
                           ? "Deactivate"
                           : "Activate"}
                     </button>

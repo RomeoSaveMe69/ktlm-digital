@@ -3,8 +3,9 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
 import { apiError } from "@/lib/api-utils";
+import { mapProductToSafeShape } from "@/lib/product-utils";
 
-/** GET: List all products (admin only). New schema: gameId, title, price, inStock, deliveryTime, status. */
+/** GET: List all products (admin only). Tolerates old schema (name, gameName, priceMmk, isActive). */
 export async function GET() {
   try {
     const session = await getSession();
@@ -12,32 +13,41 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     await connectDB();
-    const products = await Product.find()
-      .populate("sellerId", "email fullName role")
-      .populate("gameId", "title")
-      .sort({ createdAt: -1 })
-      .lean();
-    return NextResponse.json({
-      products: products.map((p) => ({
-        id: p._id.toString(),
-        gameId: (p.gameId as { _id?: unknown })?.toString?.() ?? "",
-        gameTitle: (p.gameId as { title?: string })?.title ?? "",
-        title: p.title,
-        price: p.price,
-        inStock: p.inStock,
-        deliveryTime: p.deliveryTime,
-        status: p.status,
-        createdAt: p.createdAt,
-        seller: p.sellerId
-          ? {
-              id: (p.sellerId as { _id?: unknown })?._id?.toString?.() ?? "",
-              email: (p.sellerId as { email?: string }).email,
-              fullName: (p.sellerId as { fullName?: string }).fullName,
-              role: (p.sellerId as { role?: string }).role,
-            }
-          : null,
-      })),
-    });
+    let rawProducts: unknown[] = [];
+    try {
+      rawProducts = await Product.find()
+        .populate("sellerId", "email fullName role")
+        .populate("gameId", "title")
+        .sort({ createdAt: -1 })
+        .lean();
+    } catch (fetchErr) {
+      console.error("Admin products fetch/populate error:", fetchErr);
+      return NextResponse.json({ products: [] }, { status: 200 });
+    }
+    const products = (Array.isArray(rawProducts) ? rawProducts : []).map(
+      (p: unknown) => {
+        const row = mapProductToSafeShape(
+          p as Parameters<typeof mapProductToSafeShape>[0],
+        );
+        const doc = p as Record<string, unknown> & { sellerId?: unknown };
+        const seller = doc.sellerId as
+          | { _id?: unknown; email?: string; fullName?: string; role?: string }
+          | null
+          | undefined;
+        return {
+          ...row,
+          seller: seller
+            ? {
+                id: seller._id?.toString?.() ?? "",
+                email: seller.email,
+                fullName: seller.fullName,
+                role: seller.role,
+              }
+            : null,
+        };
+      },
+    );
+    return NextResponse.json({ products });
   } catch (err) {
     console.error("Admin products list error:", err);
     return apiError("Failed to load products.", 500);

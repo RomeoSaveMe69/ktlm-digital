@@ -3,8 +3,9 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
 import { apiError } from "@/lib/api-utils";
+import { mapProductToSafeShape } from "@/lib/product-utils";
 
-/** GET: List current user's products (seller only). */
+/** GET: List current user's products (seller only). Tolerates old schema. */
 export async function GET() {
   try {
     const session = await getSession();
@@ -12,26 +13,35 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     await connectDB();
-    const products = await Product.find({ sellerId: session.userId })
-      .populate("gameId", "title image")
-      .sort({ createdAt: -1 })
-      .lean();
-    return NextResponse.json({
-      products: products.map((p) => ({
-        id: p._id.toString(),
-        gameId:
-          (p.gameId as { _id: unknown })?.toString?.() ??
-          p.gameId?.toString?.() ??
-          "",
-        gameTitle: (p.gameId as { title?: string })?.title ?? "",
-        title: p.title,
-        price: p.price,
-        inStock: p.inStock,
-        deliveryTime: p.deliveryTime,
-        status: p.status,
-        createdAt: p.createdAt,
-      })),
-    });
+    let rawProducts: unknown[] = [];
+    try {
+      rawProducts = await Product.find({ sellerId: session.userId })
+        .populate("gameId", "title image")
+        .sort({ createdAt: -1 })
+        .lean();
+    } catch (fetchErr) {
+      console.error("Seller products fetch/populate error:", fetchErr);
+      return NextResponse.json({ products: [] }, { status: 200 });
+    }
+    const products = (Array.isArray(rawProducts) ? rawProducts : []).map(
+      (p: unknown) => {
+        const row = mapProductToSafeShape(
+          p as Parameters<typeof mapProductToSafeShape>[0],
+        );
+        const doc = p as Record<string, unknown>;
+        return {
+          ...row,
+          gameId:
+            (
+              doc.gameId as { _id?: { toString(): string } }
+            )?._id?.toString?.() ??
+            (doc.gameId as unknown)?.toString?.() ??
+            "",
+          createdAt: doc.createdAt,
+        };
+      },
+    );
+    return NextResponse.json({ products });
   } catch (err) {
     console.error("Seller products list error:", err);
     return apiError("Failed to load products.", 500);
