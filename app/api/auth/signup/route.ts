@@ -64,7 +64,20 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : "";
     console.error("Signup error:", err);
+    if (message.includes("MONGODB_URI") || message.includes("JWT_SECRET")) {
+      return NextResponse.json(
+        { error: "Server configuration error. Please add MONGODB_URI and JWT_SECRET in Vercel Environment Variables." },
+        { status: 500 }
+      );
+    }
+    if (message.includes("connect") || message.includes("MongoNetworkError")) {
+      return NextResponse.json(
+        { error: "Database connection failed. Check MONGODB_URI and MongoDB Atlas network access (allow 0.0.0.0/0)." },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
       { error: "Sign up failed. Please try again." },
       { status: 500 }
