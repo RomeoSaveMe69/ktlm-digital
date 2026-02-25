@@ -2,17 +2,25 @@
 
 import { useState, useEffect } from "react";
 
+type GameOption = { id: string; title: string };
 type ProductItem = {
   id: string;
-  name: string;
-  gameName: string;
-  priceMmk: number;
-  fulfillmentType: string;
-  isActive: boolean;
+  gameId: string;
+  gameTitle: string;
+  title: string;
+  price: number;
+  inStock: number;
+  deliveryTime: string;
+  status: string;
 };
 
+/**
+ * Seller dashboard: list own products, Add New Product (Kaleoz-style).
+ * Uses new Product schema (gameId, title, price, inStock, deliveryTime, status).
+ */
 export function SellerDashboard() {
   const [products, setProducts] = useState<ProductItem[]>([]);
+  const [games, setGames] = useState<GameOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -39,8 +47,19 @@ export function SellerDashboard() {
     }
   };
 
+  const loadGames = async () => {
+    try {
+      const res = await fetch("/api/games");
+      const data = await res.json();
+      if (res.ok && data.games?.length) setGames(data.games);
+    } catch {
+      // optional
+    }
+  };
+
   useEffect(() => {
     loadProducts();
+    loadGames();
   }, []);
 
   const clearMessage = () => setMessage(null);
@@ -49,19 +68,32 @@ export function SellerDashboard() {
     e.preventDefault();
     clearMessage();
     const form = e.currentTarget;
-    const name = (
-      form.querySelector('[name="name"]') as HTMLInputElement
+    const gameId = (
+      form.querySelector('[name="gameId"]') as HTMLSelectElement
     ).value.trim();
-    const gameName = (
-      form.querySelector('[name="gameName"]') as HTMLInputElement
+    const title = (
+      form.querySelector('[name="title"]') as HTMLInputElement
     ).value.trim();
-    const priceMmk = Number(
-      (form.querySelector('[name="priceMmk"]') as HTMLInputElement).value,
+    const price = Number(
+      (form.querySelector('[name="price"]') as HTMLInputElement).value,
     );
-    if (!name || !gameName || Number.isNaN(priceMmk) || priceMmk < 0) {
+    const inStock = Number(
+      (form.querySelector('[name="inStock"]') as HTMLInputElement).value,
+    );
+    const deliveryTime = (
+      form.querySelector('[name="deliveryTime"]') as HTMLInputElement
+    ).value.trim();
+    if (
+      !gameId ||
+      !title ||
+      Number.isNaN(price) ||
+      price < 0 ||
+      Number.isNaN(inStock) ||
+      inStock < 0
+    ) {
       setMessage({
         type: "error",
-        text: "Name, game name and valid price (MMK) are required.",
+        text: "Game, title, price (≥ 0), and inStock (≥ 0) are required.",
       });
       return;
     }
@@ -71,10 +103,11 @@ export function SellerDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          gameName,
-          priceMmk,
-          fulfillmentType: "manual",
+          gameId,
+          title,
+          price,
+          inStock,
+          deliveryTime: deliveryTime || "5-15 min",
         }),
       });
       const data = await res.json();
@@ -98,19 +131,28 @@ export function SellerDashboard() {
     if (!editing) return;
     clearMessage();
     const form = e.currentTarget;
-    const name = (
-      form.querySelector('[name="name"]') as HTMLInputElement
+    const title = (
+      form.querySelector('[name="title"]') as HTMLInputElement
     ).value.trim();
-    const gameName = (
-      form.querySelector('[name="gameName"]') as HTMLInputElement
-    ).value.trim();
-    const priceMmk = Number(
-      (form.querySelector('[name="priceMmk"]') as HTMLInputElement).value,
+    const price = Number(
+      (form.querySelector('[name="price"]') as HTMLInputElement).value,
     );
-    if (!name || !gameName || Number.isNaN(priceMmk) || priceMmk < 0) {
+    const inStock = Number(
+      (form.querySelector('[name="inStock"]') as HTMLInputElement).value,
+    );
+    const deliveryTime = (
+      form.querySelector('[name="deliveryTime"]') as HTMLInputElement
+    ).value.trim();
+    if (
+      !title ||
+      Number.isNaN(price) ||
+      price < 0 ||
+      Number.isNaN(inStock) ||
+      inStock < 0
+    ) {
       setMessage({
         type: "error",
-        text: "Name, game name and valid price (MMK) are required.",
+        text: "Title, price (≥ 0), and inStock (≥ 0) are required.",
       });
       return;
     }
@@ -119,7 +161,12 @@ export function SellerDashboard() {
       const res = await fetch(`/api/seller/products/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, gameName, priceMmk }),
+        body: JSON.stringify({
+          title,
+          price,
+          inStock,
+          deliveryTime: deliveryTime || "5-15 min",
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Update failed");
@@ -160,8 +207,8 @@ export function SellerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-100">My Products</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold text-slate-100">Seller Dashboard</h1>
         <button
           type="button"
           onClick={() => {
@@ -169,9 +216,9 @@ export function SellerDashboard() {
             setEditing(null);
             clearMessage();
           }}
-          className="rounded-xl bg-emerald-500/20 px-4 py-2 font-medium text-emerald-400 ring-1 ring-emerald-500/50 hover:bg-emerald-500/30"
+          className="rounded-xl bg-emerald-500/20 px-5 py-3 font-medium text-emerald-400 ring-1 ring-emerald-500/50 transition hover:bg-emerald-500/30"
         >
-          + Add Product
+          + Add New Product
         </button>
       </div>
 
@@ -194,37 +241,69 @@ export function SellerDashboard() {
           </h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm text-slate-400">
-                Product name
-              </label>
-              <input
-                name="name"
-                type="text"
+              <label className="mb-1 block text-sm text-slate-400">Game</label>
+              <select
+                name="gameId"
                 required
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
-              />
+              >
+                <option value="">Select game</option>
+                {games.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.title}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="mb-1 block text-sm text-slate-400">
-                Game name
+                Item title
               </label>
               <input
-                name="gameName"
+                name="title"
                 type="text"
                 required
+                placeholder="e.g. 100 Diamonds"
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
               />
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm text-slate-400">
+                  Price (MMK)
+                </label>
+                <input
+                  name="price"
+                  type="number"
+                  min={0}
+                  step={1}
+                  required
+                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-slate-400">
+                  In stock
+                </label>
+                <input
+                  name="inStock"
+                  type="number"
+                  min={0}
+                  step={1}
+                  required
+                  defaultValue={1}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+                />
+              </div>
+            </div>
             <div>
               <label className="mb-1 block text-sm text-slate-400">
-                Price (MMK)
+                Delivery time (e.g. 5-15 min)
               </label>
               <input
-                name="priceMmk"
-                type="number"
-                min={0}
-                step={1}
-                required
+                name="deliveryTime"
+                type="text"
+                placeholder="5-15 min"
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
               />
             </div>
@@ -256,39 +335,54 @@ export function SellerDashboard() {
           <form onSubmit={handleUpdate} className="space-y-4">
             <div>
               <label className="mb-1 block text-sm text-slate-400">
-                Product name
+                Item title
               </label>
               <input
-                name="name"
+                name="title"
                 type="text"
-                defaultValue={editing.name}
+                defaultValue={editing.title}
                 required
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm text-slate-400">
-                Game name
-              </label>
-              <input
-                name="gameName"
-                type="text"
-                defaultValue={editing.gameName}
-                required
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm text-slate-400">
+                  Price (MMK)
+                </label>
+                <input
+                  name="price"
+                  type="number"
+                  min={0}
+                  step={1}
+                  defaultValue={editing.price}
+                  required
+                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-slate-400">
+                  In stock
+                </label>
+                <input
+                  name="inStock"
+                  type="number"
+                  min={0}
+                  step={1}
+                  defaultValue={editing.inStock}
+                  required
+                  className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
+                />
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-sm text-slate-400">
-                Price (MMK)
+                Delivery time
               </label>
               <input
-                name="priceMmk"
-                type="number"
-                min={0}
-                step={1}
-                defaultValue={editing.priceMmk}
-                required
+                name="deliveryTime"
+                type="text"
+                defaultValue={editing.deliveryTime}
                 className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100"
               />
             </div>
@@ -322,9 +416,10 @@ export function SellerDashboard() {
               className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-700/60 bg-slate-800/50 p-4"
             >
               <div>
-                <p className="font-medium text-slate-200">{p.name}</p>
+                <p className="font-medium text-slate-200">{p.title}</p>
                 <p className="text-sm text-slate-500">
-                  {p.gameName} · {p.priceMmk.toLocaleString()} MMK
+                  {p.gameTitle} · {p.price.toLocaleString()} MMK · Stock:{" "}
+                  {p.inStock}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -354,7 +449,7 @@ export function SellerDashboard() {
       )}
       {!loading && products.length === 0 && !showForm && (
         <p className="text-slate-500">
-          No products yet. Click &quot;Add Product&quot; to create one.
+          No products yet. Click &quot;Add New Product&quot; to create one.
         </p>
       )}
     </div>

@@ -20,7 +20,7 @@ export async function GET() {
     })
       .sort({ createdAt: -1 })
       .limit(50)
-      .populate("productId", "name gameName priceMmk")
+      .populate("productId", "title price")
       .lean();
 
     const list = orders.map((o) => ({
@@ -65,14 +65,14 @@ export async function POST(request: Request) {
     await connectDB();
 
     const product = await Product.findById(productId).lean();
-    if (!product || !product.isActive) {
+    if (!product || (product as { status?: string }).status !== "active") {
       return NextResponse.json(
         { error: "Product not found or inactive." },
         { status: 404 },
       );
     }
-
-    const amountMmk = product.priceMmk;
+    const price = (product as { price: number }).price;
+    const amountMmk = price;
     const platformFeeMmk = Math.round(amountMmk * PLATFORM_FEE_RATE);
 
     const order = await Order.create({
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       amountMmk,
       platformFeeMmk,
       status: "pending",
-      fulfillmentType: product.fulfillmentType ?? "manual",
+      fulfillmentType: "manual",
     });
 
     return NextResponse.json({

@@ -14,17 +14,13 @@ export default async function AdminOrderDetailPage({
   if (!mongoose.Types.ObjectId.isValid(id)) notFound();
   await connectDB();
   const order = await Order.findById(id)
-    .populate("productId", "name gameName priceMmk")
+    .populate("productId", "title price")
     .populate("buyerId", "email fullName")
     .populate("sellerId", "email fullName")
     .lean();
   if (!order) notFound();
 
-  const product = order.productId as {
-    name?: string;
-    gameName?: string;
-    priceMmk?: number;
-  } | null;
+  const product = order.productId as { title?: string; price?: number } | null;
   const buyer = order.buyerId as { email?: string; fullName?: string } | null;
   const seller = order.sellerId as { email?: string; fullName?: string } | null;
 
@@ -62,7 +58,7 @@ export default async function AdminOrderDetailPage({
           <div>
             <dt className="text-slate-500">Product</dt>
             <dd className="font-medium text-slate-200">
-              {product?.name ?? "—"} ({product?.gameName ?? "—"})
+              {product?.title ?? "—"}
             </dd>
           </div>
           <div>

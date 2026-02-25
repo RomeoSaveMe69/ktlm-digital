@@ -3,8 +3,9 @@ import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
+import { apiError } from "@/lib/api-utils";
 
-/** PATCH: Update any product (admin only) */
+/** PATCH: Update any product (admin only). New schema: title, price, inStock, deliveryTime, status. */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -22,20 +23,18 @@ export async function PATCH(
       );
     }
     const body = await request.json();
+    const update: Record<string, unknown> = {};
+    if (body.title != null) update.title = String(body.title).trim();
+    if (typeof body.price === "number" && body.price >= 0)
+      update.price = body.price;
+    if (typeof body.inStock === "number" && body.inStock >= 0)
+      update.inStock = body.inStock;
+    if (body.deliveryTime != null)
+      update.deliveryTime = String(body.deliveryTime).trim();
+    if (body.status === "active" || body.status === "inactive")
+      update.status = body.status;
     await connectDB();
-    const product = await Product.findByIdAndUpdate(
-      id,
-      {
-        ...(body.name != null && { name: String(body.name).trim() }),
-        ...(body.gameName != null && {
-          gameName: String(body.gameName).trim(),
-        }),
-        ...(typeof body.priceMmk === "number" &&
-          body.priceMmk >= 0 && { priceMmk: body.priceMmk }),
-        ...(typeof body.isActive === "boolean" && { isActive: body.isActive }),
-      },
-      { new: true },
-    );
+    const product = await Product.findByIdAndUpdate(id, update, { new: true });
     if (!product)
       return NextResponse.json(
         { error: "Product not found." },
@@ -44,22 +43,20 @@ export async function PATCH(
     return NextResponse.json({
       product: {
         id: product._id.toString(),
-        name: product.name,
-        gameName: product.gameName,
-        priceMmk: product.priceMmk,
-        isActive: product.isActive,
+        title: product.title,
+        price: product.price,
+        inStock: product.inStock,
+        deliveryTime: product.deliveryTime,
+        status: product.status,
       },
     });
   } catch (err) {
     console.error("Admin product update error:", err);
-    return NextResponse.json(
-      { error: "Failed to update product." },
-      { status: 500 },
-    );
+    return apiError("Failed to update product.", 500);
   }
 }
 
-/** DELETE: Delete any product (admin only) */
+/** DELETE: Delete any product (admin only). */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -86,9 +83,6 @@ export async function DELETE(
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Admin product delete error:", err);
-    return NextResponse.json(
-      { error: "Failed to delete product." },
-      { status: 500 },
-    );
+    return apiError("Failed to delete product.", 500);
   }
 }

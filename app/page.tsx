@@ -1,53 +1,14 @@
 import Link from "next/link";
+import { connectDB } from "@/lib/db";
+import { Product } from "@/lib/models/Product";
 
-// Quick category items (game top-ups)
-const CATEGORIES = [
+/** Placeholder popular games (Kaleoz-style grid with icons). */
+const POPULAR_GAMES = [
   { id: "mlbb", name: "MLBB", icon: "🎮", slug: "/category/mlbb" },
   { id: "pubg", name: "PUBG", icon: "🔫", slug: "/category/pubg" },
   { id: "freefire", name: "Free Fire", icon: "🔥", slug: "/category/freefire" },
   { id: "genshin", name: "Genshin", icon: "⚔️", slug: "/category/genshin" },
   { id: "codm", name: "CODM", icon: "🎯", slug: "/category/codm" },
-  { id: "more", name: "More", icon: "⋯", slug: "/categories" },
-];
-
-// Mock flash sales (replace with real data later)
-const FLASH_SALES = [
-  {
-    id: "1",
-    game: "MLBB",
-    product: "100 Diamonds",
-    price: 2500,
-    originalPrice: 3000,
-    discount: "17%",
-    endsIn: "2h 15m",
-  },
-  {
-    id: "2",
-    game: "PUBG",
-    product: "60 UC",
-    price: 1800,
-    originalPrice: 2200,
-    discount: "18%",
-    endsIn: "5h 42m",
-  },
-  {
-    id: "3",
-    game: "Free Fire",
-    product: "50 Diamonds",
-    price: 1200,
-    originalPrice: 1500,
-    discount: "20%",
-    endsIn: "1h 08m",
-  },
-  {
-    id: "4",
-    game: "Genshin",
-    product: "330 Genesis",
-    price: 8500,
-    originalPrice: 10000,
-    discount: "15%",
-    endsIn: "8h 00m",
-  },
 ];
 
 const NAV_ITEMS = [
@@ -57,7 +18,38 @@ const NAV_ITEMS = [
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 
-export default function Home() {
+export default async function HomePage() {
+  let recentProducts: Array<{
+    id: string;
+    title: string;
+    price: number;
+    inStock: number;
+    gameTitle: string;
+    sellerName: string;
+  }> = [];
+  try {
+    await connectDB();
+    const products = await Product.find({ status: "active" })
+      .populate("gameId", "title")
+      .populate("sellerId", "fullName email")
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+    recentProducts = products.map((p) => ({
+      id: p._id.toString(),
+      title: p.title,
+      price: p.price,
+      inStock: p.inStock,
+      gameTitle: (p.gameId as { title?: string })?.title ?? "—",
+      sellerName:
+        (p.sellerId as { fullName?: string })?.fullName ||
+        (p.sellerId as { email?: string })?.email ||
+        "Seller",
+    }));
+  } catch (e) {
+    console.error("Home recent products error:", e);
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 safe-area-pb">
       {/* Header */}
@@ -67,7 +59,7 @@ export default function Home() {
             <span className="bg-gradient-to-r from-emerald-400 to-purple-400 bg-clip-text text-transparent">
               Kone The Lay Myar
             </span>
-            <span className="text-slate-400 font-normal text-sm ml-1">
+            <span className="ml-1 text-sm font-normal text-slate-400">
               Digital
             </span>
           </h1>
@@ -80,95 +72,93 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="px-4 pt-4">
-        {/* Search bar */}
-        <div className="mb-5">
-          <label htmlFor="search" className="sr-only">
-            Search products or games
-          </label>
-          <div className="relative">
-            <span
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-              aria-hidden
-            >
-              🔍
-            </span>
-            <input
-              id="search"
-              type="search"
-              placeholder="Search games, diamonds, UC..."
-              className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 py-3 pl-10 pr-4 text-slate-100 placeholder-slate-500 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-            />
-          </div>
-        </div>
-
-        {/* Quick Categories */}
-        <section className="mb-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
-            Quick Categories
+      <main className="px-4 pt-6">
+        {/* Hero / Search Section (Kaleoz-style: big centered search) */}
+        <section className="mb-8 text-center">
+          <h2 className="mb-2 text-xl font-bold text-slate-100 sm:text-2xl">
+            Find games & items
           </h2>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {CATEGORIES.map((cat) => (
-              <Link
-                key={cat.id}
-                href={cat.slug}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-700/60 bg-slate-800/60 py-4 transition hover:border-emerald-500/40 hover:bg-slate-800 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] active:scale-[0.98]"
+          <p className="mb-4 text-sm text-slate-500">
+            Search by game name or item (diamonds, UC, top-up…)
+          </p>
+          <div className="mx-auto max-w-xl">
+            <label htmlFor="hero-search" className="sr-only">
+              Search games or items
+            </label>
+            <div className="relative">
+              <span
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                aria-hidden
               >
-                <span className="text-2xl">{cat.icon}</span>
+                🔍
+              </span>
+              <input
+                id="hero-search"
+                type="search"
+                placeholder="e.g. MLBB, 100 Diamonds, PUBG UC..."
+                className="w-full rounded-2xl border border-slate-700/80 bg-slate-800/80 py-4 pl-12 pr-4 text-slate-100 placeholder-slate-500 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Popular Games (placeholder grid with icons) */}
+        <section className="mb-8">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Popular Games
+          </h2>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+            {POPULAR_GAMES.map((game) => (
+              <Link
+                key={game.id}
+                href={game.slug}
+                className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/60 py-5 transition hover:border-emerald-500/40 hover:bg-slate-800 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] active:scale-[0.98]"
+              >
+                <span className="text-3xl" aria-hidden>
+                  {game.icon}
+                </span>
                 <span className="text-xs font-medium text-slate-300">
-                  {cat.name}
+                  {game.name}
                 </span>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* Live Flash Sales */}
+        {/* Recent Listings (Kaleoz-style cards: item name, price, seller, stock) */}
         <section className="mb-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
-              Live Flash Sales
-            </h2>
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
-              Live
-            </span>
-          </div>
-          <div className="space-y-3">
-            {FLASH_SALES.map((sale) => (
-              <Link
-                key={sale.id}
-                href={`/product/${sale.id}`}
-                className="flex items-center gap-3 rounded-xl border border-slate-700/60 bg-slate-800/60 p-3 transition hover:border-purple-500/40 hover:bg-slate-800/80 hover:shadow-[0_0_24px_-6px_rgba(168,85,247,0.25)] active:scale-[0.99]"
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-700/80 text-xl">
-                  🎮
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-slate-200">
-                    {sale.product}
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Recent Listings
+          </h2>
+          {recentProducts.length === 0 ? (
+            <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 px-6 py-12 text-center text-slate-500">
+              No items available currently.
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {recentProducts.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/product/${p.id}`}
+                  className="flex flex-col rounded-xl border border-slate-700/60 bg-slate-800/60 p-4 transition hover:border-emerald-500/40 hover:bg-slate-800/80 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.15)] active:scale-[0.99]"
+                >
+                  <p className="font-medium text-slate-200">{p.title}</p>
+                  <p className="mt-1 text-sm text-slate-500">{p.gameTitle}</p>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="font-semibold text-emerald-400">
+                      {p.price.toLocaleString()} MMK
+                    </span>
+                    <span className="rounded bg-slate-700/80 px-2 py-0.5 text-xs text-slate-400">
+                      Stock: {p.inStock}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Seller: {p.sellerName}
                   </p>
-                  <p className="text-xs text-slate-500">{sale.game}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="font-semibold text-emerald-400">
-                    {sale.price.toLocaleString()} MMK
-                  </p>
-                  <p className="text-xs text-slate-500 line-through">
-                    {sale.originalPrice.toLocaleString()}
-                  </p>
-                </div>
-                <div className="shrink-0">
-                  <span className="rounded-md bg-purple-500/25 px-2 py-0.5 text-xs font-medium text-purple-300">
-                    -{sale.discount}
-                  </span>
-                  <p className="mt-1 text-[10px] text-slate-500">
-                    Ends {sale.endsIn}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* CTA */}
@@ -185,7 +175,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Floating Bottom Navigation */}
+      {/* Bottom nav */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md safe-area-bottom"
         aria-label="Main navigation"

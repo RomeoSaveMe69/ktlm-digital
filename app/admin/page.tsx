@@ -16,7 +16,7 @@ export default async function AdminDashboardPage() {
       Order.find({ status: { $in: ["pending", "processing", "disputed"] } })
         .sort({ createdAt: -1 })
         .limit(20)
-        .populate("productId", "name gameName")
+        .populate("productId", "title price")
         .lean(),
       Order.aggregate([
         { $match: { status: "completed" } },
@@ -24,6 +24,7 @@ export default async function AdminDashboardPage() {
       ]),
       Product.find()
         .populate("sellerId", "email fullName role")
+        .populate("gameId", "title")
         .sort({ createdAt: -1 })
         .lean(),
       User.find().select("-passwordHash").sort({ createdAt: -1 }).lean(),
@@ -36,13 +37,14 @@ export default async function AdminDashboardPage() {
 
   const productsForAdmin = allProducts.map((p) => ({
     id: p._id.toString(),
-    name: p.name,
-    gameName: p.gameName,
-    priceMmk: p.priceMmk,
-    isActive: p.isActive,
+    title: (p as { title: string }).title,
+    gameTitle: (p.gameId as { title?: string })?.title ?? "",
+    price: (p as { price: number }).price,
+    inStock: (p as { inStock: number }).inStock,
+    status: (p as { status: string }).status,
     seller: p.sellerId
       ? {
-          id: (p.sellerId as { _id: unknown })._id?.toString?.() ?? "",
+          id: (p.sellerId as { _id?: unknown })?._id?.toString?.() ?? "",
           email: (p.sellerId as { email?: string }).email,
           fullName: (p.sellerId as { fullName?: string }).fullName,
           role: (p.sellerId as { role?: string }).role,
