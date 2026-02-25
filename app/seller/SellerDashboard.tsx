@@ -33,7 +33,10 @@ export function SellerDashboard() {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/seller/products");
+      const res = await fetch("/api/seller/products", {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load");
       setProducts(data.products ?? []);
@@ -112,10 +115,24 @@ export function SellerDashboard() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Create failed");
+
+      const gameTitle =
+        games.find((g) => g.id === gameId)?.title ?? "Unknown Game";
+      const newItem: ProductItem = {
+        id: data.product.id,
+        gameId: data.product.gameId ?? gameId,
+        gameTitle,
+        title: data.product.title,
+        price: data.product.price,
+        inStock: data.product.inStock,
+        deliveryTime: data.product.deliveryTime ?? "5-15 min",
+        status: data.product.status ?? "active",
+      };
+      setProducts((prev) => [newItem, ...prev]);
       setMessage({ type: "success", text: "Product created." });
       setShowForm(false);
       form.reset();
-      loadProducts();
+      await loadProducts();
     } catch (err) {
       setMessage({
         type: "error",

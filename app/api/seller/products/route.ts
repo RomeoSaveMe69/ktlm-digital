@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
 import { apiError } from "@/lib/api-utils";
 import { mapProductToSafeShape } from "@/lib/product-utils";
+
+export const dynamic = "force-dynamic";
 
 /** GET: List current user's products (seller only). Tolerates old schema. */
 export async function GET() {
@@ -48,41 +51,73 @@ export async function GET() {
   }
 }
 
-/** POST: Create product (seller only). sellerId = current user. */
+/** POST: Create product (seller only). sellerId = current user's ID from session. */
 export async function POST(request: Request) {
   try {
     const session = await getSession();
     if (!session || (session.role !== "seller" && session.role !== "admin")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        { error: "You must be logged in as a seller to add products." },
+        { status: 403 },
+      );
     }
     const body = await request.json();
-    const { gameId, title, price, inStock, deliveryTime } = body;
-    if (
-      !gameId ||
-      !title ||
-      typeof price !== "number" ||
-      price < 0 ||
-      typeof inStock !== "number" ||
-      inStock < 0
-    ) {
+    const gameId = body.gameId != null ? String(body.gameId).trim() : "";
+    const title = body.title != null ? String(body.title).trim() : "";
+    const price = Number(body.price);
+    const inStock = Number(body.inStock);
+    const deliveryTime =
+      body.deliveryTime != null ? String(body.deliveryTime).trim() : "";
+
+    if (!gameId || !title) {
       return NextResponse.json(
-        {
-          error:
-            "gameId, title, price (number >= 0), and inStock (number >= 0) are required.",
-        },
+        { error: "Game and item title are required." },
         { status: 400 },
       );
     }
+    if (!mongoose.Types.ObjectId.isValid(gameId)) {
+      return NextResponse.json(
+        { error: "Invalid game. Please select a game from the list." },
+        { status: 400 },
+      );
+    }
+    if (Number.isNaN(price) || price < 0) {
+      return NextResponse.json(
+        { error: "Price must be a number greater than or equal to 0." },
+        { status: 400 },
+      );
+    }
+    if (Number.isNaN(inStock) || inStock < 0) {
+      return NextResponse.json(
+        { error: "In stock must be a number greater than or equal to 0." },
+        { status: 400 },
+      );
+    }
+
     await connectDB();
+
+    const sellerIdObj =
+      mongoose.Types.ObjectId.isValid(session.userId) &&
+      String(session.userId).length === 24
+        ? new mongoose.Types.ObjectId(session.userId)
+        : null;
+    if (!sellerIdObj) {
+      return NextResponse.json(
+        { error: "Invalid session. Please log in again." },
+        { status: 401 },
+      );
+    }
+
     const product = await Product.create({
-      gameId,
-      sellerId: session.userId,
-      title: String(title).trim(),
-      price: Number(price),
-      inStock: Number(inStock),
-      deliveryTime: deliveryTime ? String(deliveryTime).trim() : "5-15 min",
+      gameId: new mongoose.Types.ObjectId(gameId),
+      sellerId: sellerIdObj,
+      title,
+      price,
+      inStock,
+      deliveryTime: deliveryTime || "5-15 min",
       status: "active",
     });
+
     return NextResponse.json({
       product: {
         id: product._id.toString(),
@@ -95,7 +130,18 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
+    const msg =
+      err instanceof Error ? err.message : "Failed to create product.";
     console.error("Seller product create error:", err);
-    return apiError("Failed to create product.", 500);
+    if (msg.includes("validation failed") || msg.includes("Cast to ObjectId")) {
+      return NextResponse.json(
+        { error: "Invalid data. Check game and fields." },
+        { status: 400 },
+      );
+    }
+    return apiError(
+      msg.length > 80 ? "Failed to create product. Please try again." : msg,
+      500,
+    );
   }
 }
