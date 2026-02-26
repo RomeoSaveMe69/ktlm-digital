@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminDataProvider } from "./_context/AdminDataContext";
 
 /** Sidebar menu for admin panel. UI shell: auth not enforced. */
 const SIDEBAR_NAV = [
@@ -65,7 +66,9 @@ export default function AdminLayout({
           <h1 className="text-xl font-semibold text-slate-100">Admin Dashboard</h1>
           <p className="text-sm text-slate-500">Kone The Lay Myar Digital — Management</p>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-6">
+          <AdminDataProvider>{children}</AdminDataProvider>
+        </div>
       </main>
     </div>
   );
