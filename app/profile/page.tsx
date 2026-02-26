@@ -6,6 +6,8 @@ import { User } from "@/lib/models/User";
 import { Wallet } from "@/lib/models/Wallet";
 import { ProfileSignOut } from "./ProfileSignOut";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Profile page: account info, wallets, and role-based actions (Admin Panel, Seller Dashboard, Become a Seller).
  * Requires login; redirects to /login if no session.
@@ -31,7 +33,7 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 safe-area-pb">
       <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
           <Link href="/" className="text-lg font-bold tracking-tight">
             <span className="bg-gradient-to-r from-emerald-400 to-purple-400 bg-clip-text text-transparent">
               Kone The Lay Myar
@@ -40,7 +42,22 @@ export default async function ProfilePage() {
               Digital
             </span>
           </Link>
-          <ProfileSignOut />
+          {/* Balance chip + deposit shortcut */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg border border-slate-700/60 bg-slate-800/80 px-3 py-1.5">
+              <span className="text-xs font-semibold text-emerald-400">
+                {(user.balance ?? 0).toLocaleString()} MMK
+              </span>
+              <Link
+                href="/deposit"
+                title="Deposit / Add Funds"
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold transition hover:bg-emerald-500/40 hover:text-emerald-300"
+              >
+                +
+              </Link>
+            </div>
+            <ProfileSignOut />
+          </div>
         </div>
       </header>
 
@@ -107,18 +124,37 @@ export default async function ProfilePage() {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
             Balance
           </h2>
-          {wallets && wallets.length > 0 ? (
-            <ul className="space-y-3">
+
+          {/* Main MMK balance from deposit system */}
+          <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-4">
+            <p className="text-xs text-slate-500 mb-1">Wallet Balance</p>
+            <p className="text-3xl font-bold text-emerald-400">
+              {(user.balance ?? 0).toLocaleString()}
+              <span className="ml-2 text-base font-normal text-slate-400">MMK</span>
+            </p>
+            {/* Deposit button */}
+            <Link
+              href="/deposit"
+              className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-500 active:scale-[0.98]"
+            >
+              <span className="text-lg leading-none">💳</span>
+              Deposit / Add Funds
+            </Link>
+          </div>
+
+          {/* Legacy wallet balances */}
+          {wallets && wallets.length > 0 && (
+            <ul className="space-y-2">
               {wallets.map((w) => (
                 <li
                   key={w.currency}
                   className="flex items-center justify-between rounded-lg border border-slate-700/40 bg-slate-900/50 px-4 py-3"
                 >
-                  <span className="font-medium text-slate-300">
-                    {w.currency}
+                  <span className="font-medium text-slate-400 text-sm">
+                    {w.currency} (Legacy)
                   </span>
                   <div className="text-right">
-                    <p className="font-semibold text-emerald-400">
+                    <p className="font-semibold text-slate-300">
                       {Number(w.balance).toLocaleString()} {w.currency}
                     </p>
                     {Number(w.escrowBalance) > 0 && (
@@ -130,8 +166,6 @@ export default async function ProfilePage() {
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="text-sm text-slate-500">No wallets yet.</p>
           )}
         </section>
 

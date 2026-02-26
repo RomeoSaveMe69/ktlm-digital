@@ -6,9 +6,11 @@
  * Step 2: Select payment method (card UI)
  * Step 3: View payment details (account info or QR code)
  * Step 4: Enter transaction ID + upload screenshot → submit
+ * Balance is fetched live from /api/me/balance and shown in header.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type PaymentMethod = {
   id: string;
@@ -40,6 +42,7 @@ const STEP_LABELS = [
 
 export default function DepositPage() {
   const [step, setStep] = useState(1);
+  const [currentBalance, setCurrentBalance] = useState<number | null>(null);
 
   // Step 1
   const [amount, setAmount] = useState("");
@@ -90,9 +93,22 @@ export default function DepositPage() {
     }
   }, []);
 
+  const refreshBalance = useCallback(async () => {
+    try {
+      const res = await fetch("/api/me/balance");
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentBalance(data.balance ?? 0);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     loadHistory();
-  }, [loadHistory]);
+    refreshBalance();
+  }, [loadHistory, refreshBalance]);
 
   // Step 1 → 2
   const handleAmountNext = () => {
@@ -147,7 +163,7 @@ export default function DepositPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setSubmitError(data.error || "Submit failed."); return; }
       setSubmitSuccess(true);
-      await loadHistory();
+      await Promise.all([loadHistory(), refreshBalance()]);
     } catch {
       setSubmitError("Network error.");
     } finally {
@@ -174,12 +190,24 @@ export default function DepositPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* Header */}
       <div className="border-b border-slate-800 bg-slate-900/80 px-6 py-4">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold text-slate-100">Recharge / Deposit</h1>
             <p className="text-sm text-slate-500">ငွေဖြည့်ရန် အောက်ပါ အဆင့်များ လိုက်နာပါ</p>
           </div>
-          <a href="/" className="text-sm text-slate-500 hover:text-slate-300">← Back</a>
+          <div className="flex items-center gap-3">
+            {currentBalance !== null && (
+              <div className="rounded-lg border border-slate-700/60 bg-slate-800/80 px-3 py-1.5 text-center">
+                <p className="text-xs text-slate-500 leading-none mb-0.5">Balance</p>
+                <p className="text-sm font-bold text-emerald-400">
+                  {currentBalance.toLocaleString()} MMK
+                </p>
+              </div>
+            )}
+            <Link href="/" className="text-sm text-slate-500 hover:text-slate-300">
+              ← Back
+            </Link>
+          </div>
         </div>
       </div>
 

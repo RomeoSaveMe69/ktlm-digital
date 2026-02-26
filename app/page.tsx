@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
+import { User } from "@/lib/models/User";
+
+export const dynamic = "force-dynamic";
 
 /** Placeholder popular games (Kaleoz-style grid with icons). */
 const POPULAR_GAMES = [
@@ -19,6 +23,9 @@ const NAV_ITEMS = [
 ];
 
 export default async function HomePage() {
+  const session = await getSession();
+  let userBalance: number | null = null;
+
   let recentProducts: Array<{
     id: string;
     title: string;
@@ -29,6 +36,14 @@ export default async function HomePage() {
   }> = [];
   try {
     await connectDB();
+
+    if (session?.userId) {
+      const userData = await User.findById(session.userId)
+        .select("balance")
+        .lean();
+      userBalance = userData?.balance ?? 0;
+    }
+
     const products = await Product.find({ status: "active" })
       .populate("gameId", "title")
       .populate("sellerId", "fullName email")
@@ -63,12 +78,41 @@ export default async function HomePage() {
               Digital
             </span>
           </h1>
-          <Link
-            href="/login"
-            className="shrink-0 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 ring-1 ring-emerald-500/50 transition hover:bg-emerald-500/30 hover:ring-emerald-400/60"
-          >
-            Login
-          </Link>
+
+          {session ? (
+            /* Logged-in: balance chip + deposit button + profile */
+            <div className="flex items-center gap-2">
+              {/* Balance + deposit shortcut */}
+              <div className="flex items-center gap-1 rounded-lg border border-slate-700/60 bg-slate-800/80 px-3 py-1.5">
+                <span className="text-xs font-semibold text-emerald-400">
+                  {(userBalance ?? 0).toLocaleString()} MMK
+                </span>
+                <Link
+                  href="/deposit"
+                  title="Deposit / Add Funds"
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold transition hover:bg-emerald-500/40 hover:text-emerald-300"
+                >
+                  +
+                </Link>
+              </div>
+              {/* Profile icon */}
+              <Link
+                href="/profile"
+                title="Profile"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/80 text-slate-300 transition hover:border-emerald-500/40 hover:text-slate-100"
+              >
+                👤
+              </Link>
+            </div>
+          ) : (
+            /* Guest: login button */
+            <Link
+              href="/login"
+              className="shrink-0 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 ring-1 ring-emerald-500/50 transition hover:bg-emerald-500/30 hover:ring-emerald-400/60"
+            >
+              Login
+            </Link>
+          )}
         </div>
       </header>
 
