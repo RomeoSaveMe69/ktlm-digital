@@ -3,12 +3,13 @@ import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
+import { Game } from "@/lib/models/Game";
+import { ProductCategory } from "@/lib/models/ProductCategory";
 import { apiError } from "@/lib/api-utils";
-import { mapProductToSafeShape } from "@/lib/product-utils";
 
 export const dynamic = "force-dynamic";
 
-/** GET: List current user's products (seller only). Tolerates old schema. */
+/** GET /api/seller/products – list current seller's products. */
 export async function GET() {
   try {
     const session = await getSession();
@@ -23,46 +24,38 @@ export async function GET() {
     ) {
       return NextResponse.json(
         { error: "Invalid session. Please log in again." },
-        { status: 401 },
+        { status: 401 }
       );
     }
     const sellerIdObj = new mongoose.Types.ObjectId(sellerIdStr);
     await connectDB();
-    let rawProducts: unknown[] = [];
-    try {
-      rawProducts = await Product.find({ sellerId: sellerIdObj })
-        .populate("gameId", "title image")
-        .sort({ createdAt: -1 })
-        .lean();
-    } catch (fetchErr) {
-      console.error("Seller products fetch/populate error:", fetchErr);
-      try {
-        rawProducts = await Product.find({ sellerId: sellerIdObj })
-          .sort({ createdAt: -1 })
-          .lean();
-      } catch (fallbackErr) {
-        console.error("Seller products fallback fetch error:", fallbackErr);
-        return NextResponse.json({ products: [] }, { status: 200 });
-      }
-    }
-    const products = (Array.isArray(rawProducts) ? rawProducts : []).map(
-      (p: unknown) => {
-        const row = mapProductToSafeShape(
-          p as Parameters<typeof mapProductToSafeShape>[0],
-        );
-        const doc = p as Record<string, unknown>;
-        return {
-          ...row,
-          gameId:
-            (
-              doc.gameId as { _id?: { toString(): string } }
-            )?._id?.toString?.() ??
-            (doc.gameId as unknown)?.toString?.() ??
-            "",
-          createdAt: doc.createdAt,
-        };
-      },
-    );
+    const rawProducts = await Product.find({ sellerId: sellerIdObj })
+      .populate("gameId", "title image")
+      .populate("productCategoryId", "title")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const products = rawProducts.map((p) => ({
+      id: p._id.toString(),
+      customTitle: p.customTitle ?? p.title ?? "",
+      gameId:
+        (p.gameId as { _id?: { toString(): string } })?._id?.toString?.() ??
+        p.gameId?.toString() ??
+        "",
+      gameTitle:
+        (p.gameId as { title?: string })?.title ?? "Unknown Game",
+      productCategoryId:
+        (p.productCategoryId as { _id?: { toString(): string } })?._id?.toString?.() ??
+        p.productCategoryId?.toString() ??
+        "",
+      categoryTitle:
+        (p.productCategoryId as { title?: string })?.title ?? "",
+      price: p.price,
+      inStock: p.inStock,
+      status: p.status,
+      createdAt: p.createdAt,
+    }));
+
     return NextResponse.json({ products });
   } catch (err) {
     console.error("Seller products list error:", err);
@@ -70,97 +63,125 @@ export async function GET() {
   }
 }
 
-/** POST: Create product (seller only). sellerId = current user's ID from session. */
+/**
+ * POST /api/seller/products – create a product listing.
+ * Body: { gameId, productCategoryId, customTitle, price, inStock }
+ */
 export async function POST(request: Request) {
   try {
     const session = await getSession();
     if (!session || (session.role !== "seller" && session.role !== "admin")) {
       return NextResponse.json(
         { error: "You must be logged in as a seller to add products." },
-        { status: 403 },
+        { status: 403 }
       );
     }
+    const sellerIdStr = String(session.userId ?? "").trim();
+    if (
+      !sellerIdStr ||
+      !mongoose.Types.ObjectId.isValid(sellerIdStr) ||
+      sellerIdStr.length !== 24
+    ) {
+      return NextResponse.json(
+        { error: "Invalid session. Please log in again." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const gameId = body.gameId != null ? String(body.gameId).trim() : "";
-    const title = body.title != null ? String(body.title).trim() : "";
+    const productCategoryId =
+      body.productCategoryId != null
+        ? String(body.productCategoryId).trim()
+        : "";
+    const customTitle =
+      body.customTitle != null ? String(body.customTitle).trim() : "";
     const price = Number(body.price);
-    const inStock = Number(body.inStock);
-    const deliveryTime =
-      body.deliveryTime != null ? String(body.deliveryTime).trim() : "";
+    const inStock = Number(body.inStock ?? 0);
 
-    if (!gameId || !title) {
+    if (!gameId || !mongoose.Types.ObjectId.isValid(gameId)) {
       return NextResponse.json(
-        { error: "Game and item title are required." },
-        { status: 400 },
+        { error: "Please select a valid game." },
+        { status: 400 }
       );
     }
-    if (!mongoose.Types.ObjectId.isValid(gameId)) {
+    if (
+      !productCategoryId ||
+      !mongoose.Types.ObjectId.isValid(productCategoryId)
+    ) {
       return NextResponse.json(
-        { error: "Invalid game. Please select a game from the list." },
-        { status: 400 },
+        { error: "Please select a valid product category." },
+        { status: 400 }
+      );
+    }
+    if (!customTitle) {
+      return NextResponse.json(
+        { error: "Custom title is required." },
+        { status: 400 }
       );
     }
     if (Number.isNaN(price) || price < 0) {
       return NextResponse.json(
-        { error: "Price must be a number greater than or equal to 0." },
-        { status: 400 },
+        { error: "Price must be 0 or greater." },
+        { status: 400 }
       );
     }
     if (Number.isNaN(inStock) || inStock < 0) {
       return NextResponse.json(
-        { error: "In stock must be a number greater than or equal to 0." },
-        { status: 400 },
+        { error: "Stock must be 0 or greater." },
+        { status: 400 }
       );
     }
 
     await connectDB();
 
-    const sellerIdObj =
-      mongoose.Types.ObjectId.isValid(session.userId) &&
-      String(session.userId).length === 24
-        ? new mongoose.Types.ObjectId(session.userId)
-        : null;
-    if (!sellerIdObj) {
+    // Verify game and category exist and category belongs to game
+    const [game, category] = await Promise.all([
+      Game.findById(gameId).lean(),
+      ProductCategory.findById(productCategoryId).lean(),
+    ]);
+    if (!game) {
+      return NextResponse.json({ error: "Game not found." }, { status: 404 });
+    }
+    if (!category) {
       return NextResponse.json(
-        { error: "Invalid session. Please log in again." },
-        { status: 401 },
+        { error: "Product category not found." },
+        { status: 404 }
+      );
+    }
+    if (category.gameId.toString() !== gameId) {
+      return NextResponse.json(
+        { error: "Category does not belong to selected game." },
+        { status: 400 }
       );
     }
 
+    const sellerIdObj = new mongoose.Types.ObjectId(sellerIdStr);
     const product = await Product.create({
       gameId: new mongoose.Types.ObjectId(gameId),
       sellerId: sellerIdObj,
-      title,
+      productCategoryId: new mongoose.Types.ObjectId(productCategoryId),
+      customTitle,
+      title: customTitle,
       price,
       inStock,
-      deliveryTime: deliveryTime || "5-15 min",
+      deliveryTime: "5-15 min",
       status: "active",
     });
 
     return NextResponse.json({
       product: {
         id: product._id.toString(),
+        customTitle: product.customTitle,
         gameId: product.gameId.toString(),
-        title: product.title,
+        productCategoryId: product.productCategoryId.toString(),
         price: product.price,
         inStock: product.inStock,
-        deliveryTime: product.deliveryTime,
         status: product.status,
       },
     });
   } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "Failed to create product.";
     console.error("Seller product create error:", err);
-    if (msg.includes("validation failed") || msg.includes("Cast to ObjectId")) {
-      return NextResponse.json(
-        { error: "Invalid data. Check game and fields." },
-        { status: 400 },
-      );
-    }
-    return apiError(
-      msg.length > 80 ? "Failed to create product. Please try again." : msg,
-      500,
-    );
+    return apiError("Failed to create product. Please try again.", 500);
   }
 }
