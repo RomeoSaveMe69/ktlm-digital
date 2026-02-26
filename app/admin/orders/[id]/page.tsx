@@ -27,7 +27,7 @@ export default async function AdminOrderDetailPage({
   return (
     <div className="space-y-6">
       <Link
-        href="/admin#orders"
+        href="/admin/order"
         className="text-sm text-slate-400 hover:text-slate-200"
       >
         ← Back to orders
