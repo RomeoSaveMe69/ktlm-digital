@@ -8,6 +8,7 @@ const SIDEBAR_NAV = [
   { href: "/admin/seller", label: "Seller", icon: "🏪" },
   { href: "/admin/user", label: "User", icon: "👥" },
   { href: "/admin/recharge", label: "Recharge", icon: "💰" },
+  { href: "/admin/payment-info", label: "Payment Info", icon: "🏦" },
   { href: "/admin/games", label: "Games", icon: "🎮" },
   { href: "/admin/product", label: "Product", icon: "🛒" },
   { href: "/admin/withdraw", label: "Withdraw", icon: "💸" },

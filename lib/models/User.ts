@@ -14,6 +14,7 @@ export interface IUser {
   kycStatus: KycStatus;
   telegramChatId?: string;
   telegramUsername?: string;
+  balance: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,7 @@ const userSchema = new Schema<IUser>(
     },
     telegramChatId: { type: String },
     telegramUsername: { type: String, trim: true },
+    balance: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );
