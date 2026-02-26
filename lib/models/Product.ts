@@ -4,11 +4,19 @@ export type ProductStatus = "active" | "inactive";
 export type PricingMode = "manual" | "auto";
 export type RoundingTarget = 0 | 10 | 50 | 100;
 
+/** Input field buyers must fill when placing an order. */
+export interface IBuyerInput {
+  label: string;
+  isRequired: boolean;
+}
+
 /**
  * Product listing sold by a seller.
  * References: Game, ProductCategory (admin-defined), and User (seller).
  * customTitle: Seller's own display name (e.g. "55+5 UC Fast Delivery").
  * pricingMode: 'manual' = seller sets price directly; 'auto' = calculated from SellerProductInfo.
+ * buyerInputs: Dynamic form fields buyers fill at checkout (e.g. UID, server, zone).
+ * totalSold: cumulative order count (incremented on completion) — used for "Highest Sold" sort.
  */
 export interface IProduct {
   _id: mongoose.Types.ObjectId;
@@ -26,6 +34,12 @@ export interface IProduct {
   pricingMode: PricingMode;
   sellerProductInfoId?: mongoose.Types.ObjectId;
   roundingTarget: RoundingTarget;
+  /** Dynamic inputs buyers must fill when ordering. */
+  buyerInputs: IBuyerInput[];
+  /** Seller's description / instructions for buyers. */
+  description: string;
+  /** Total completed orders – used for Highest Sold sort. */
+  totalSold: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +77,17 @@ const productSchema = new Schema<IProduct>(
       enum: [0, 10, 50, 100],
       default: 0,
     },
+    buyerInputs: {
+      type: [
+        {
+          label: { type: String, required: true, trim: true },
+          isRequired: { type: Boolean, default: true },
+        },
+      ],
+      default: [],
+    },
+    description: { type: String, default: "", trim: true },
+    totalSold: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );

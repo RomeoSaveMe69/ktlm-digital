@@ -15,6 +15,7 @@ export interface IUser {
   telegramChatId?: string;
   telegramUsername?: string;
   balance: number;
+  withdrawableBalance: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +44,12 @@ const userSchema = new Schema<IUser>(
     telegramChatId: { type: String },
     telegramUsername: { type: String, trim: true },
     balance: { type: Number, default: 0, min: 0 },
+    /**
+     * Seller earnings held in escrow until withdrawal.
+     * Incremented when an order is completed (after 0.5% platform fee deduction).
+     * Separate from buyer `balance` so each role's funds stay isolated.
+     */
+    withdrawableBalance: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );

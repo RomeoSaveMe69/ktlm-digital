@@ -3,17 +3,17 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
 import { User } from "@/lib/models/User";
+import { Game } from "@/lib/models/Game";
 
 export const dynamic = "force-dynamic";
 
-/** Placeholder popular games (Kaleoz-style grid with icons). */
-const POPULAR_GAMES = [
-  { id: "mlbb", name: "MLBB", icon: "🎮", slug: "/category/mlbb" },
-  { id: "pubg", name: "PUBG", icon: "🔫", slug: "/category/pubg" },
-  { id: "freefire", name: "Free Fire", icon: "🔥", slug: "/category/freefire" },
-  { id: "genshin", name: "Genshin", icon: "⚔️", slug: "/category/genshin" },
-  { id: "codm", name: "CODM", icon: "🎯", slug: "/category/codm" },
-];
+const GAME_ICONS: Record<string, string> = {
+  MLBB: "🎮",
+  PUBG: "🔫",
+  "Free Fire": "🔥",
+  "Genshin Impact": "⚔️",
+  CODM: "🎯",
+};
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: "🏠" },
@@ -26,13 +26,16 @@ export default async function HomePage() {
   const session = await getSession();
   let userBalance: number | null = null;
 
+  let games: Array<{ id: string; title: string; icon: string }> = [];
   let recentProducts: Array<{
     id: string;
     title: string;
     price: number;
     inStock: number;
+    gameId: string;
     gameTitle: string;
     sellerName: string;
+    totalSold: number;
   }> = [];
   try {
     await connectDB();
@@ -44,6 +47,24 @@ export default async function HomePage() {
       userBalance = userData?.balance ?? 0;
     }
 
+    let dbGames = await Game.find().sort({ title: 1 }).lean();
+    if (dbGames.length === 0) {
+      const defaults = [
+        { title: "MLBB", image: "", description: "Mobile Legends: Bang Bang" },
+        { title: "PUBG", image: "", description: "PUBG Mobile" },
+        { title: "Free Fire", image: "", description: "Garena Free Fire" },
+        { title: "Genshin Impact", image: "", description: "Genshin Impact" },
+        { title: "CODM", image: "", description: "Call of Duty Mobile" },
+      ];
+      await Game.insertMany(defaults);
+      dbGames = await Game.find().sort({ title: 1 }).lean();
+    }
+    games = dbGames.map((g) => ({
+      id: g._id.toString(),
+      title: g.title,
+      icon: GAME_ICONS[g.title] ?? "🎲",
+    }));
+
     const products = await Product.find({ status: "active" })
       .populate("gameId", "title")
       .populate("sellerId", "fullName email")
@@ -52,17 +73,19 @@ export default async function HomePage() {
       .lean();
     recentProducts = products.map((p) => ({
       id: p._id.toString(),
-      title: p.title,
+      title: p.customTitle || p.title,
       price: p.price,
       inStock: p.inStock,
+      gameId: (p.gameId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
       gameTitle: (p.gameId as { title?: string })?.title ?? "—",
       sellerName:
         (p.sellerId as { fullName?: string })?.fullName ||
         (p.sellerId as { email?: string })?.email ||
         "Seller",
+      totalSold: p.totalSold ?? 0,
     }));
   } catch (e) {
-    console.error("Home recent products error:", e);
+    console.error("Home page load error:", e);
   }
 
   return (
@@ -146,23 +169,23 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Popular Games (placeholder grid with icons) */}
+        {/* Popular Games - links to /game/[id] */}
         <section className="mb-8">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
             Popular Games
           </h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
-            {POPULAR_GAMES.map((game) => (
+            {games.map((game) => (
               <Link
                 key={game.id}
-                href={game.slug}
+                href={`/game/${game.id}`}
                 className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/60 py-5 transition hover:border-emerald-500/40 hover:bg-slate-800 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] active:scale-[0.98]"
               >
                 <span className="text-3xl" aria-hidden>
                   {game.icon}
                 </span>
                 <span className="text-xs font-medium text-slate-300">
-                  {game.name}
+                  {game.title}
                 </span>
               </Link>
             ))}

@@ -29,6 +29,8 @@ type ProductInfo = {
   currencyProfitMargin: number;
 };
 
+type BuyerInputField = { label: string; isRequired: boolean };
+
 type SellerProduct = {
   id: string;
   customTitle: string;
@@ -42,10 +44,14 @@ type SellerProduct = {
   pricingMode: string;
   sellerProductInfoId: string | null;
   roundingTarget: number;
+  description: string;
+  buyerInputs: BuyerInputField[];
 };
 
 type RoundingOption = 0 | 10 | 50 | 100;
 const ROUNDING_OPTIONS: RoundingOption[] = [0, 10, 50, 100];
+
+const emptyBuyerInput: BuyerInputField = { label: "", isRequired: true };
 
 const emptyForm = {
   customTitle: "",
@@ -56,6 +62,8 @@ const emptyForm = {
   sellerProductInfoId: "",
   roundingTarget: 0 as RoundingOption,
   inStock: "",
+  description: "",
+  buyerInputs: [] as BuyerInputField[],
 };
 
 export default function SellerProductPage() {
@@ -228,6 +236,8 @@ export default function SellerProductPage() {
         ? p.roundingTarget
         : 0) as RoundingOption,
       inStock: String(p.inStock),
+      description: p.description ?? "",
+      buyerInputs: p.buyerInputs ?? [],
     });
     loadCategories(p.gameId);
   };
@@ -266,6 +276,8 @@ export default function SellerProductPage() {
       customTitle: form.customTitle.trim(),
       inStock,
       pricingMode: form.pricingMode,
+      description: form.description.trim(),
+      buyerInputs: form.buyerInputs.filter((b) => b.label.trim()),
     };
 
     if (form.pricingMode === "auto") {
@@ -554,6 +566,107 @@ export default function SellerProductPage() {
               ) : null}
             </div>
           )}
+
+          {/* Description */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-400">
+              Description / Instructions
+              <span className="ml-1 text-xs text-slate-500">(ဝယ်သူကို ပြသမည့်ရှင်းလင်းချက်)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder="e.g. UC ဝယ်ရန် UID နှင့် Zone ID ဖြည့်ပါ။ 5-15 မိနစ်အတွင်း ပြန်ပေးပို့မည်။"
+              disabled={saving}
+              className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-60 resize-none"
+            />
+          </div>
+
+          {/* Buyer Inputs */}
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-400">
+                Buyer Order Inputs
+                <span className="ml-1 text-xs text-slate-500">(ဝယ်သူ ဖြည့်ရမည့်အကွက်များ)</span>
+              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  setForm((f) => ({
+                    ...f,
+                    buyerInputs: [...f.buyerInputs, { ...emptyBuyerInput }],
+                  }))
+                }
+                disabled={saving}
+                className="rounded-lg border border-emerald-500/50 px-3 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-60"
+              >
+                + Add Input
+              </button>
+            </div>
+            {form.buyerInputs.length === 0 ? (
+              <p className="text-xs text-slate-500">
+                Input မရှိ — UID, Zone ID စသည့် ဝယ်သူ ဖြည့်ရမည့်အကွက် ထည့်ရန် 'Add Input' နှိပ်ပါ
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {form.buyerInputs.map((bi, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 rounded-lg border border-slate-700/60 bg-slate-900/50 p-3"
+                  >
+                    <input
+                      type="text"
+                      value={bi.label}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setForm((f) => ({
+                          ...f,
+                          buyerInputs: f.buyerInputs.map((item, i) =>
+                            i === idx ? { ...item, label: v } : item,
+                          ),
+                        }));
+                      }}
+                      placeholder="Field name (e.g. UID, Zone ID)"
+                      disabled={saving}
+                      className="flex-1 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+                    />
+                    <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={bi.isRequired}
+                        onChange={(e) => {
+                          const v = e.target.checked;
+                          setForm((f) => ({
+                            ...f,
+                            buyerInputs: f.buyerInputs.map((item, i) =>
+                              i === idx ? { ...item, isRequired: v } : item,
+                            ),
+                          }));
+                        }}
+                        disabled={saving}
+                        className="h-3.5 w-3.5 accent-emerald-500"
+                      />
+                      Required
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          buyerInputs: f.buyerInputs.filter((_, i) => i !== idx),
+                        }))
+                      }
+                      disabled={saving}
+                      className="shrink-0 rounded-md p-1.5 text-slate-500 hover:bg-red-500/20 hover:text-red-400 disabled:opacity-60"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Buttons */}
           <div className="flex gap-3">

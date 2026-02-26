@@ -99,6 +99,17 @@ export async function PATCH(
       update.deliveryTime = String(body.deliveryTime).trim();
     if (body.status === "active" || body.status === "inactive")
       update.status = body.status;
+    if (body.description != null)
+      update.description = String(body.description).trim();
+    if (Array.isArray(body.buyerInputs)) {
+      update.buyerInputs = body.buyerInputs
+        .filter((i: unknown) => i && typeof (i as Record<string, unknown>).label === "string")
+        .map((i: { label: string; isRequired?: boolean }) => ({
+          label: String(i.label).trim(),
+          isRequired: i.isRequired !== false,
+        }))
+        .filter((i: { label: string }) => i.label.length > 0);
+    }
 
     const pricingMode = body.pricingMode === "auto" ? "auto" : "manual";
     update.pricingMode = pricingMode;

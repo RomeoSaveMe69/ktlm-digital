@@ -68,6 +68,9 @@ export async function GET(request: Request) {
       pricingMode: p.pricingMode ?? "manual",
       sellerProductInfoId: p.sellerProductInfoId?.toString() ?? null,
       roundingTarget: p.roundingTarget ?? 0,
+      description: p.description ?? "",
+      buyerInputs: p.buyerInputs ?? [],
+      totalSold: p.totalSold ?? 0,
       createdAt: p.createdAt,
     }));
 
@@ -111,6 +114,16 @@ export async function POST(request: Request) {
     const customTitle = String(body.customTitle ?? "").trim();
     const inStock = Number(body.inStock ?? 0);
     const pricingMode = body.pricingMode === "auto" ? "auto" : "manual";
+    const description = String(body.description ?? "").trim();
+    const buyerInputs = Array.isArray(body.buyerInputs)
+      ? body.buyerInputs
+          .filter((i: unknown) => i && typeof (i as Record<string, unknown>).label === "string")
+          .map((i: { label: string; isRequired?: boolean }) => ({
+            label: String(i.label).trim(),
+            isRequired: i.isRequired !== false,
+          }))
+          .filter((i: { label: string }) => i.label.length > 0)
+      : [];
 
     if (!gameId || !mongoose.Types.ObjectId.isValid(gameId)) {
       return NextResponse.json(
@@ -227,6 +240,8 @@ export async function POST(request: Request) {
       pricingMode,
       sellerProductInfoId,
       roundingTarget,
+      description,
+      buyerInputs,
     });
 
     return NextResponse.json({
