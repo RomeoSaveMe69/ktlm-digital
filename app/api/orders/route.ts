@@ -88,12 +88,12 @@ export async function POST(request: Request) {
 
     // Validate required buyer inputs
     const missing = (product.buyerInputs ?? [])
-      .filter((bi) => bi.isRequired)
-      .filter((bi) => {
+      .filter((bi: { label: string; isRequired: boolean }) => bi.isRequired)
+      .filter((bi: { label: string; isRequired: boolean }) => {
         const found = buyerInputData.find((d) => d.label === bi.label);
         return !found || !found.value.trim();
       })
-      .map((bi) => bi.label);
+      .map((bi: { label: string; isRequired: boolean }) => bi.label);
     if (missing.length > 0) {
       return NextResponse.json(
         { error: `Required fields missing: ${missing.join(", ")}` },
