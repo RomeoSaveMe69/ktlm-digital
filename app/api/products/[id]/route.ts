@@ -42,10 +42,12 @@ export async function GET(
         deliveryTime: p.deliveryTime,
         totalSold: p.totalSold ?? 0,
         description: p.description ?? "",
-        buyerInputs: (p.buyerInputs ?? []).map((bi) => ({
-          label: bi.label,
-          isRequired: bi.isRequired,
-        })),
+        buyerInputs: (p.buyerInputs ?? []).map(
+          (bi: { label: string; isRequired: boolean }) => ({
+            label: bi.label,
+            isRequired: bi.isRequired,
+          }),
+        ),
       },
     });
   } catch (err) {
