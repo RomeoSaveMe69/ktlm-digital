@@ -11,6 +11,7 @@ type WithdrawalItem = {
   accountName: string;
   status: string;
   createdAt: string;
+  updatedAt: string;
 };
 
 export default function AdminWithdrawPage() {
