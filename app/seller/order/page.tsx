@@ -1,31 +1,20 @@
 "use client";
 
-/**
- * Seller Order Management Page.
- * - Lists real orders from DB (via /api/seller/orders)
- * - Status flow buttons: Pending → Processing → Sent
- * - "View Detail" modal showing buyer's input data (UID etc.)
- * - Cancel button for pending orders
- */
-
 import { useCallback, useEffect, useState } from "react";
 
-type InputData = { label: string; value: string };
 type Order = {
   id: string;
   orderId: string;
   productTitle: string;
-  buyerEmail: string;
+  buyerId: string;
   buyerName: string;
+  buyerEmail: string;
   price: number;
-  buyerInputData: InputData[];
+  buyerInputData: { label: string; value: string }[];
   status: string;
   sentAt: string | null;
-  completedAt: string | null;
   createdAt: string;
 };
-
-type FilterStatus = "" | "pending" | "processing" | "sent" | "completed" | "cancelled";
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-amber-500/20 text-amber-400",
@@ -35,335 +24,148 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled: "bg-red-500/20 text-red-400",
 };
 
-const STATUS_MM: Record<string, string> = {
-  pending: "Pending",
-  processing: "Processing",
-  sent: "Sent",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
-
-const ADVANCE_LABEL: Record<string, string> = {
-  pending: "▶ Processing",
-  processing: "📦 Mark as Sent",
-};
-
-const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
-  { value: "", label: "All" },
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "sent", label: "Sent" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
 export default function SellerOrderPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("");
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [actionId, setActionId] = useState<string | null>(null);
 
-  // Detail modal
-  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
-
-  const loadOrders = useCallback(async (status?: FilterStatus) => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
-      const url = status
-        ? `/api/seller/orders?status=${status}`
-        : "/api/seller/orders";
+      let url = "/api/seller/orders";
+      if (statusFilter) url += `?status=${statusFilter}`;
       const res = await fetch(url);
-      if (res.status === 401 || res.status === 403) {
-        setError("Access denied.");
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setError(data.error || "Failed to load."); return; }
-      setOrders(data.orders ?? []);
-    } catch {
-      setError("Network error.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      const data = await res.json();
+      if (res.ok) setOrders(data.orders ?? []);
+    } catch { /* ignore */ } finally { setLoading(false); }
+  }, [statusFilter]);
 
-  useEffect(() => {
-    loadOrders(filterStatus || undefined);
-  }, [loadOrders, filterStatus]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const handleAdvance = async (order: Order) => {
-    if (!ADVANCE_LABEL[order.status]) return;
-    const confirmMsg =
-      order.status === "processing"
-        ? `Order ${order.orderId} ကို 'Sent' အဖြစ် မှတ်သားမည်လား? Buyer သတိပေးချက် ရရှိမည်။`
-        : `Order ${order.orderId} ကို 'Processing' ပြောင်းမည်လား?`;
-    if (!window.confirm(confirmMsg)) return;
-    setActionLoading(order.id);
+  const handleAction = async (orderId: string, action: "advance" | "cancel") => {
+    if (action === "cancel" && !confirm("Cancel this order? Buyer will be refunded.")) return;
+    setActionId(orderId);
     try {
-      const res = await fetch(`/api/seller/orders/${order.id}`, {
+      const res = await fetch(`/api/seller/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "advance" }),
+        body: JSON.stringify({ action }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { alert(data.error || "Failed."); return; }
-      await loadOrders(filterStatus || undefined);
-    } catch {
-      alert("Network error.");
-    } finally {
-      setActionLoading(null);
-    }
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Action failed"); return; }
+      fetchOrders();
+    } catch { alert("Network error"); } finally { setActionId(null); }
   };
 
-  const handleCancel = async (order: Order) => {
-    if (!window.confirm(`Order ${order.orderId} ကို Cancel လုပ်မည်လား?`)) return;
-    setActionLoading(order.id);
-    try {
-      const res = await fetch(`/api/seller/orders/${order.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cancel" }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { alert(data.error || "Failed."); return; }
-      await loadOrders(filterStatus || undefined);
-    } catch {
-      alert("Network error.");
-    } finally {
-      setActionLoading(null);
-    }
+  const openChat = (buyerId: string, buyerName: string) => {
+    window.dispatchEvent(
+      new CustomEvent("open-chat", { detail: { sellerId: buyerId, sellerName: buyerName } }),
+    );
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-lg font-semibold text-slate-100">Orders</h2>
-        <p className="text-sm text-slate-500">ဝယ်သူများထံမှ ဝင်လာသော အော်ဒါများ</p>
+        <p className="text-sm text-slate-500">Manage incoming orders from buyers</p>
       </div>
 
-      {/* Filter Tabs */}
+      {/* Status Filter */}
       <div className="flex flex-wrap gap-2">
-        {FILTER_OPTIONS.map((opt) => (
+        {["", "pending", "processing", "sent", "completed", "cancelled"].map((s) => (
           <button
-            key={opt.value}
+            key={s}
             type="button"
-            onClick={() => setFilterStatus(opt.value)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-              filterStatus === opt.value
+            onClick={() => setStatusFilter(s)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              statusFilter === s
                 ? "bg-emerald-600 text-white"
-                : "border border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300"
+                : "border border-slate-600 text-slate-400 hover:bg-slate-800"
             }`}
           >
-            {opt.label}
+            {s || "All"}
           </button>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800/50">
-        {loading ? (
-          <div className="px-6 py-10 text-center text-slate-500">Loading...</div>
-        ) : error ? (
-          <div className="px-6 py-10 text-center text-red-400">{error}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[780px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-700/80 bg-slate-800/80">
-                  <th className="px-4 py-3 font-medium text-slate-400">Order ID</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Product</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Buyer</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Price</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Status</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Date</th>
-                  <th className="px-4 py-3 font-medium text-slate-400">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
-                      Order မရှိသေးပါ
-                    </td>
-                  </tr>
-                ) : (
-                  orders.map((o) => (
-                    <tr
-                      key={o.id}
-                      className="border-b border-slate-700/40 transition hover:bg-slate-800/60"
+      {loading ? (
+        <div className="py-12 text-center text-slate-500">Loading...</div>
+      ) : orders.length === 0 ? (
+        <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 py-12 text-center text-slate-500">
+          No orders found.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {orders.map((o) => (
+            <div key={o.id} className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-4 space-y-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="font-mono text-xs text-slate-500">{o.orderId}</p>
+                  <p className="font-medium text-slate-200">{o.productTitle}</p>
+                  <p className="text-xs text-slate-500">Buyer: {o.buyerName || o.buyerEmail}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-emerald-400">{o.price.toLocaleString()} MMK</p>
+                  {/* Chat with buyer */}
+                  {o.buyerId && (
+                    <button
+                      type="button"
+                      onClick={() => openChat(o.buyerId, o.buyerName || o.buyerEmail)}
+                      title="Chat with Buyer"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-400 transition hover:bg-violet-500/20"
                     >
-                      <td className="px-4 py-3 font-mono text-xs text-slate-400">
-                        {o.orderId}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-slate-200 max-w-[160px] truncate">
-                        {o.productTitle}
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 max-w-[140px] truncate">
-                        {o.buyerName || o.buyerEmail}
-                      </td>
-                      <td className="px-4 py-3 text-emerald-400 font-medium">
-                        {o.price.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                            STATUS_STYLE[o.status] ?? "bg-slate-600/50 text-slate-400"
-                          }`}
-                        >
-                          {STATUS_MM[o.status] ?? o.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-500">
-                        {new Date(o.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          {/* View Detail */}
-                          <button
-                            type="button"
-                            onClick={() => setDetailOrder(o)}
-                            className="rounded-md border border-slate-600 px-2.5 py-1 text-xs text-slate-400 transition hover:border-slate-500 hover:text-slate-200"
-                          >
-                            Detail
-                          </button>
-                          {/* Advance Status */}
-                          {ADVANCE_LABEL[o.status] && (
-                            <button
-                              type="button"
-                              onClick={() => handleAdvance(o)}
-                              disabled={actionLoading === o.id}
-                              className="rounded-md bg-emerald-600/20 border border-emerald-500/40 px-2.5 py-1 text-xs text-emerald-400 transition hover:bg-emerald-600/30 disabled:opacity-60"
-                            >
-                              {actionLoading === o.id ? "..." : ADVANCE_LABEL[o.status]}
-                            </button>
-                          )}
-                          {/* Cancel */}
-                          {o.status === "pending" && (
-                            <button
-                              type="button"
-                              onClick={() => handleCancel(o)}
-                              disabled={actionLoading === o.id}
-                              className="rounded-md bg-red-500/10 border border-red-500/30 px-2.5 py-1 text-xs text-red-400 transition hover:bg-red-500/20 disabled:opacity-60"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
 
-      {/* Detail Modal */}
-      {detailOrder && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          onClick={() => setDetailOrder(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl border border-slate-700/60 bg-slate-900 p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-xs text-slate-500">{detailOrder.orderId}</p>
-                <h3 className="font-semibold text-slate-100 mt-0.5">
-                  {detailOrder.productTitle}
-                </h3>
+              <div className="flex items-center gap-2">
+                <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[o.status] ?? "bg-slate-600/50 text-slate-400"}`}>
+                  {o.status}
+                </span>
+                <span className="text-xs text-slate-500">{new Date(o.createdAt).toLocaleString()}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setDetailOrder(null)}
-                className="shrink-0 rounded-full p-1.5 text-slate-500 hover:bg-slate-800 hover:text-slate-300"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Buyer</span>
-                <span className="text-slate-300">
-                  {detailOrder.buyerName || detailOrder.buyerEmail}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Price</span>
-                <span className="font-medium text-emerald-400">
-                  {detailOrder.price.toLocaleString()} MMK
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Status</span>
-                <span
-                  className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-                    STATUS_STYLE[detailOrder.status] ?? "bg-slate-600/50 text-slate-400"
-                  }`}
-                >
-                  {STATUS_MM[detailOrder.status] ?? detailOrder.status}
-                </span>
-              </div>
-              {detailOrder.sentAt && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Sent At</span>
-                  <span className="text-slate-400">
-                    {new Date(detailOrder.sentAt).toLocaleString()}
-                  </span>
+              {o.buyerInputData.length > 0 && (
+                <div className="rounded-lg border border-slate-700/40 bg-slate-900/50 px-3 py-2 space-y-0.5">
+                  {o.buyerInputData.map((d) => (
+                    <div key={d.label} className="flex justify-between text-xs">
+                      <span className="text-slate-500">{d.label}</span>
+                      <span className="font-mono text-slate-300">{d.value}</span>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {detailOrder.buyerInputData.length > 0 && (
-                <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-4">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Buyer Provided Information
-                  </p>
-                  <div className="space-y-2">
-                    {detailOrder.buyerInputData.map((d) => (
-                      <div key={d.label} className="flex justify-between gap-4">
-                        <span className="text-sm text-slate-500">{d.label}</span>
-                        <span className="font-mono font-semibold text-slate-100 text-sm">
-                          {d.value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              {/* Actions */}
+              {(o.status === "pending" || o.status === "processing") && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAction(o.id, "advance")}
+                    disabled={actionId === o.id}
+                    className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                  >
+                    {actionId === o.id ? "..." : o.status === "pending" ? "Accept (Processing)" : "Mark as Sent"}
+                  </button>
+                  {o.status === "pending" && (
+                    <button
+                      type="button"
+                      onClick={() => handleAction(o.id, "cancel")}
+                      disabled={actionId === o.id}
+                      className="rounded-lg border border-red-500/40 px-4 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
               )}
-
-              {detailOrder.buyerInputData.length === 0 && (
-                <p className="rounded-lg bg-slate-800/50 px-3 py-2 text-xs text-slate-500">
-                  Buyer input data မရှိပါ
-                </p>
-              )}
             </div>
-
-            <div className="mt-5 flex gap-3">
-              {ADVANCE_LABEL[detailOrder.status] && (
-                <button
-                  type="button"
-                  onClick={() => { handleAdvance(detailOrder); setDetailOrder(null); }}
-                  className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500"
-                >
-                  {ADVANCE_LABEL[detailOrder.status]}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setDetailOrder(null)}
-                className="flex-1 rounded-xl border border-slate-600 py-2.5 text-sm text-slate-400 hover:text-slate-200"
-              >
-                Close
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
       )}
     </div>

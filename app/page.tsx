@@ -4,20 +4,14 @@ import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
 import { User } from "@/lib/models/User";
 import { Game } from "@/lib/models/Game";
+import { Cart } from "@/lib/models/Cart";
 
 export const dynamic = "force-dynamic";
-
-const GAME_ICONS: Record<string, string> = {
-  MLBB: "🎮",
-  PUBG: "🔫",
-  "Free Fire": "🔥",
-  "Genshin Impact": "⚔️",
-  CODM: "🎯",
-};
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: "🏠" },
   { href: "/orders", label: "Orders", icon: "📦" },
+  { href: "/cart", label: "Cart", icon: "🛒" },
   { href: "/chat", label: "Chat", icon: "💬" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
@@ -25,8 +19,9 @@ const NAV_ITEMS = [
 export default async function HomePage() {
   const session = await getSession();
   let userBalance: number | null = null;
+  let cartCount = 0;
 
-  let games: Array<{ id: string; title: string; icon: string }> = [];
+  let games: Array<{ id: string; title: string; image: string }> = [];
   let recentProducts: Array<{
     id: string;
     title: string;
@@ -45,6 +40,7 @@ export default async function HomePage() {
         .select("balance")
         .lean();
       userBalance = userData?.balance ?? 0;
+      cartCount = await Cart.countDocuments({ userId: session.userId });
     }
 
     let dbGames = await Game.find().sort({ title: 1 }).lean();
@@ -62,7 +58,7 @@ export default async function HomePage() {
     games = dbGames.map((g) => ({
       id: g._id.toString(),
       title: g.title,
-      icon: GAME_ICONS[g.title] ?? "🎲",
+      image: g.image ?? "",
     }));
 
     const products = await Product.find({ status: "active" })
@@ -103,9 +99,7 @@ export default async function HomePage() {
           </h1>
 
           {session ? (
-            /* Logged-in: balance chip + deposit button + profile */
             <div className="flex items-center gap-2">
-              {/* Balance + deposit shortcut */}
               <div className="flex items-center gap-1 rounded-lg border border-slate-700/60 bg-slate-800/80 px-3 py-1.5">
                 <span className="text-xs font-semibold text-emerald-400">
                   {(userBalance ?? 0).toLocaleString()} MMK
@@ -118,7 +112,19 @@ export default async function HomePage() {
                   +
                 </Link>
               </div>
-              {/* Profile icon */}
+              {/* Cart icon with badge */}
+              <Link
+                href="/cart"
+                title="Cart"
+                className="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/80 text-slate-300 transition hover:border-emerald-500/40 hover:text-slate-100"
+              >
+                🛒
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
               <Link
                 href="/profile"
                 title="Profile"
@@ -128,7 +134,6 @@ export default async function HomePage() {
               </Link>
             </div>
           ) : (
-            /* Guest: login button */
             <Link
               href="/login"
               className="shrink-0 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 ring-1 ring-emerald-500/50 transition hover:bg-emerald-500/30 hover:ring-emerald-400/60"
@@ -140,7 +145,7 @@ export default async function HomePage() {
       </header>
 
       <main className="px-4 pt-6">
-        {/* Hero / Search Section (Kaleoz-style: big centered search) */}
+        {/* Hero / Search */}
         <section className="mb-8 text-center">
           <h2 className="mb-2 text-xl font-bold text-slate-100 sm:text-2xl">
             Find games & items
@@ -149,16 +154,9 @@ export default async function HomePage() {
             Search by game name or item (diamonds, UC, top-up…)
           </p>
           <div className="mx-auto max-w-xl">
-            <label htmlFor="hero-search" className="sr-only">
-              Search games or items
-            </label>
+            <label htmlFor="hero-search" className="sr-only">Search games or items</label>
             <div className="relative">
-              <span
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                aria-hidden
-              >
-                🔍
-              </span>
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden>🔍</span>
               <input
                 id="hero-search"
                 type="search"
@@ -169,7 +167,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Popular Games - links to /game/[id] */}
+        {/* Popular Games with images */}
         <section className="mb-8">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
             Popular Games
@@ -179,12 +177,20 @@ export default async function HomePage() {
               <Link
                 key={game.id}
                 href={`/game/${game.id}`}
-                className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/60 py-5 transition hover:border-emerald-500/40 hover:bg-slate-800 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] active:scale-[0.98]"
+                className="flex flex-col items-center gap-2 rounded-xl border border-slate-700/60 bg-slate-800/60 py-4 transition hover:border-emerald-500/40 hover:bg-slate-800 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] active:scale-[0.98]"
               >
-                <span className="text-3xl" aria-hidden>
-                  {game.icon}
-                </span>
-                <span className="text-xs font-medium text-slate-300">
+                {game.image ? (
+                  <img
+                    src={game.image}
+                    alt={game.title}
+                    className="h-12 w-12 rounded-lg object-cover"
+                  />
+                ) : (
+                  <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-700/50 text-2xl">
+                    🎮
+                  </span>
+                )}
+                <span className="text-xs font-medium text-slate-300 text-center px-1 line-clamp-1">
                   {game.title}
                 </span>
               </Link>
@@ -192,7 +198,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Recent Listings (Kaleoz-style cards: item name, price, seller, stock) */}
+        {/* Recent Listings */}
         <section className="mb-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
             Recent Listings
@@ -219,19 +225,19 @@ export default async function HomePage() {
                       Stock: {p.inStock}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Seller: {p.sellerName}
-                  </p>
+                  <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                    <span>Seller: {p.sellerName}</span>
+                    {p.totalSold > 0 && <span className="text-amber-400">{p.totalSold} sold</span>}
+                  </div>
                 </Link>
               ))}
             </div>
           )}
         </section>
 
-        {/* CTA */}
         <div className="rounded-xl border border-slate-700/60 bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-4 text-center">
           <p className="text-sm text-slate-400">
-            Secure escrow • Telegram notifications • 0.5% platform fee
+            Secure escrow · Telegram notifications · Low platform fee
           </p>
           <Link
             href="/categories"
@@ -242,7 +248,7 @@ export default async function HomePage() {
         </div>
       </main>
 
-      {/* Bottom nav */}
+      {/* Bottom nav with cart badge */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md safe-area-bottom"
         aria-label="Main navigation"
@@ -252,16 +258,19 @@ export default async function HomePage() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 rounded-lg px-4 py-2 text-xs font-medium transition ${
+              className={`relative flex flex-col items-center gap-0.5 rounded-lg px-3 py-2 text-xs font-medium transition ${
                 item.href === "/"
                   ? "text-emerald-400"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <span className="text-lg" aria-hidden>
-                {item.icon}
-              </span>
+              <span className="text-lg" aria-hidden>{item.icon}</span>
               <span>{item.label}</span>
+              {item.href === "/cart" && cartCount > 0 && (
+                <span className="absolute -right-0.5 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {cartCount}
+                </span>
+              )}
             </Link>
           ))}
         </div>

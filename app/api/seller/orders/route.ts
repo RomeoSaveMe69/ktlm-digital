@@ -37,22 +37,26 @@ export async function GET(request: Request) {
       .lean();
 
     return NextResponse.json({
-      orders: orders.map((o) => ({
-        id: o._id.toString(),
-        orderId: o.orderId,
-        productTitle:
-          (o.productId as { customTitle?: string })?.customTitle ||
-          (o.productId as { title?: string })?.title ||
-          "Product",
-        buyerEmail: (o.buyerId as { email?: string })?.email ?? "",
-        buyerName: (o.buyerId as { fullName?: string })?.fullName ?? "",
-        price: o.price,
-        buyerInputData: o.buyerInputData,
-        status: o.status,
-        sentAt: o.sentAt ?? null,
-        completedAt: o.completedAt ?? null,
-        createdAt: o.createdAt,
-      })),
+      orders: orders.map((o) => {
+        const buyer = o.buyerId as { _id?: { toString(): string }; email?: string; fullName?: string } | undefined;
+        return {
+          id: o._id.toString(),
+          orderId: o.orderId,
+          productTitle:
+            (o.productId as { customTitle?: string })?.customTitle ||
+            (o.productId as { title?: string })?.title ||
+            "Product",
+          buyerId: buyer?._id?.toString() ?? "",
+          buyerEmail: buyer?.email ?? "",
+          buyerName: buyer?.fullName ?? "",
+          price: o.price,
+          buyerInputData: o.buyerInputData,
+          status: o.status,
+          sentAt: o.sentAt ?? null,
+          completedAt: o.completedAt ?? null,
+          createdAt: o.createdAt,
+        };
+      }),
     });
   } catch (err) {
     console.error("Seller orders GET error:", err);

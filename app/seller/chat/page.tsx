@@ -39,7 +39,7 @@ export default function SellerChatPage() {
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((d) => {
-        if (d.user) setSession({ userId: d.user.userId });
+        if (d.user) setSession({ userId: d.user.id });
       })
       .catch(() => {});
   }, []);

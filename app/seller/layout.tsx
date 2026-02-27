@@ -6,6 +6,7 @@ const SIDEBAR_NAV = [
   { href: "/seller/order", label: "Order", icon: "📦" },
   { href: "/seller/wallet", label: "Wallet", icon: "💳" },
   { href: "/seller/chat", label: "Chat", icon: "💬" },
+  { href: "/seller/reviews", label: "Reviews", icon: "⭐" },
   { href: "/seller/product", label: "Product", icon: "🛒" },
   { href: "/seller/product-info", label: "Product Info", icon: "📄" },
   { href: "/seller/price", label: "Price", icon: "💰" },

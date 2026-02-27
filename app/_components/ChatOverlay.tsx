@@ -57,7 +57,7 @@ export default function ChatOverlay() {
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((d) => {
-        if (d.user) setSession({ userId: d.user.userId, role: d.user.role });
+        if (d.user) setSession({ userId: d.user.id, role: d.user.role });
       })
       .catch(() => {});
   }, []);
