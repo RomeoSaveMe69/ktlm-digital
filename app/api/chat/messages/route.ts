@@ -22,12 +22,13 @@ export async function GET(request: NextRequest) {
     if (!partnerId) return apiError("partnerId is required", 400);
 
     await connectDB();
-    const userId = session.userId;
+    const uid = new mongoose.Types.ObjectId(session.userId);
+    const pid = new mongoose.Types.ObjectId(partnerId);
 
     const messages = await Message.find({
       $or: [
-        { senderId: userId, receiverId: partnerId },
-        { senderId: partnerId, receiverId: userId },
+        { senderId: uid, receiverId: pid },
+        { senderId: pid, receiverId: uid },
       ],
     })
       .sort({ createdAt: 1 })
@@ -35,20 +36,20 @@ export async function GET(request: NextRequest) {
 
     // Mark unread messages as read
     await Message.updateMany(
-      { senderId: partnerId, receiverId: userId, isRead: false },
+      { senderId: pid, receiverId: uid, isRead: false },
       { $set: { isRead: true } },
     );
 
-    const formatted = messages.map((m) => ({
-      _id: m._id.toString(),
-      senderId: m.senderId.toString(),
-      receiverId: m.receiverId.toString(),
-      text: m.text,
-      isRead: m.isRead,
-      createdAt: m.createdAt,
-    }));
-
-    return NextResponse.json({ messages: formatted });
+    return NextResponse.json({
+      messages: messages.map((m) => ({
+        _id: m._id.toString(),
+        senderId: m.senderId.toString(),
+        receiverId: m.receiverId.toString(),
+        text: m.text,
+        isRead: m.isRead,
+        createdAt: m.createdAt,
+      })),
+    });
   } catch (err) {
     console.error("Chat messages GET error:", err);
     return apiError(normalizeErrorMessage(err), 500);

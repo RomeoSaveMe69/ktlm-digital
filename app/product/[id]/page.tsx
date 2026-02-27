@@ -252,17 +252,17 @@ export default function ProductDetailPage() {
             <div className="divide-y divide-slate-700/40">
               {reviews.map((r) => (
                 <div key={r.id} className="px-5 py-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-slate-300">{r.buyerName}</span>
-                      <span className="text-amber-400 text-xs">{stars(r.rating)}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">
+                      {r.buyerName.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-[10px] text-slate-500">{new Date(r.createdAt).toLocaleDateString()}</span>
+                    <span className="text-sm font-medium text-slate-200">{r.buyerName}</span>
+                    <span className="text-amber-400 text-sm tracking-tight">{stars(r.rating)}</span>
                   </div>
-                  <p className="text-sm text-slate-200">{r.text}</p>
+                  <p className="text-sm text-slate-300 pl-9">{r.text}</p>
                   {r.reply && (
-                    <div className="ml-4 rounded-lg border border-slate-700/30 bg-slate-900/50 p-3">
-                      <p className="text-xs text-slate-400 mb-0.5">Seller Reply:</p>
+                    <div className="ml-9 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                      <p className="text-xs text-emerald-400 mb-0.5">Seller Reply</p>
                       <p className="text-sm text-slate-300">{r.reply}</p>
                     </div>
                   )}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { Message } from "@/lib/models/Message";
@@ -18,22 +19,19 @@ export async function GET(request: NextRequest) {
     if (!session) return apiError("Unauthorized", 401);
 
     await connectDB();
-    const userId = session.userId;
+    const uid = new mongoose.Types.ObjectId(session.userId);
 
-    const messages = await Message.aggregate([
+    const conversations = await Message.aggregate([
       {
         $match: {
-          $or: [
-            { senderId: { $toObjectId: userId } },
-            { receiverId: { $toObjectId: userId } },
-          ],
+          $or: [{ senderId: uid }, { receiverId: uid }],
         },
       },
       {
         $addFields: {
           partnerId: {
             $cond: {
-              if: { $eq: ["$senderId", { $toObjectId: userId }] },
+              if: { $eq: ["$senderId", uid] },
               then: "$receiverId",
               else: "$senderId",
             },
@@ -52,7 +50,7 @@ export async function GET(request: NextRequest) {
               $cond: [
                 {
                   $and: [
-                    { $eq: ["$receiverId", { $toObjectId: userId }] },
+                    { $eq: ["$receiverId", uid] },
                     { $eq: ["$isRead", false] },
                   ],
                 },
@@ -89,11 +87,10 @@ export async function GET(request: NextRequest) {
       },
     ]);
 
-    // Also check query param for role-based filtering (seller only sees buyers)
     const role = request.nextUrl.searchParams.get("role");
-    let filtered = messages;
+    let filtered = conversations;
     if (role) {
-      filtered = messages.filter(
+      filtered = conversations.filter(
         (m: { partnerRole: string }) => m.partnerRole === role,
       );
     }

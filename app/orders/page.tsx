@@ -1,13 +1,5 @@
 "use client";
 
-/**
- * Buyer Orders Page.
- * - Lists all the buyer's orders
- * - Shows buyerInputData, status, price
- * - "Confirm Received" button when status = 'sent'
- * - Escrow settlement on confirm (handled server-side)
- */
-
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -15,6 +7,7 @@ type OrderInputData = { label: string; value: string };
 type Order = {
   id: string;
   orderId: string;
+  productId: string;
   productTitle: string;
   gameTitle: string;
   price: number;
@@ -48,10 +41,100 @@ function RemainingTime({ sentAt }: { sentAt: string }) {
   if (remaining <= 0) return <span className="text-xs text-slate-500">Auto-completing soon...</span>;
   const h = Math.floor(remaining / 3600000);
   const m = Math.floor((remaining % 3600000) / 60000);
+  return <span className="text-xs text-amber-400">⏱ Auto-complete in {h}h {m}m</span>;
+}
+
+function ReviewModal({
+  order,
+  onClose,
+}: {
+  order: { id: string; orderId: string; productTitle: string };
+  onClose: () => void;
+}) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [hoverStar, setHoverStar] = useState(0);
+
+  const handleSubmit = async () => {
+    if (!comment.trim()) { alert("Please write a review comment."); return; }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, rating, text: comment.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Failed to submit review."); return; }
+      onClose();
+    } catch { alert("Network error."); } finally { setSubmitting(false); }
+  };
+
   return (
-    <span className="text-xs text-amber-400">
-      ⏱ Auto-complete in {h}h {m}m
-    </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-700/60 bg-slate-900 p-6 shadow-2xl space-y-5">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-100">Leave a Review</h3>
+          <p className="text-sm text-slate-400 mt-1">
+            Order <span className="font-mono text-slate-300">{order.orderId}</span> — {order.productTitle}
+          </p>
+        </div>
+
+        {/* Star Rating */}
+        <div>
+          <p className="text-sm font-medium text-slate-300 mb-2">Rating</p>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                onMouseEnter={() => setHoverStar(star)}
+                onMouseLeave={() => setHoverStar(0)}
+                className={`text-2xl transition ${
+                  star <= (hoverStar || rating) ? "text-amber-400" : "text-slate-600"
+                } hover:scale-110`}
+              >
+                ★
+              </button>
+            ))}
+            <span className="ml-2 self-center text-sm text-slate-400">{rating}/5</span>
+          </div>
+        </div>
+
+        {/* Comment */}
+        <div>
+          <p className="text-sm font-medium text-slate-300 mb-2">Comment</p>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Share your experience..."
+            rows={3}
+            className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800"
+          >
+            Skip
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          >
+            {submitting ? "Submitting..." : "Submit Review"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -60,6 +143,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -79,16 +163,14 @@ export default function OrdersPage() {
 
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
-  const handleConfirm = async (orderId: string) => {
+  const handleConfirm = async (order: Order) => {
     if (!window.confirm("Order ရောက်ကြောင်း Confirm ပြုလုပ်မည်လား? Seller ထံ ငွေပေးချေမည်။")) return;
-    setConfirmingId(orderId);
+    setConfirmingId(order.id);
     try {
-      const res = await fetch(`/api/orders/${orderId}/confirm`, { method: "POST" });
+      const res = await fetch(`/api/orders/${order.id}/confirm`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(data.error || "Confirm failed.");
-        return;
-      }
+      if (!res.ok) { alert(data.error || "Confirm failed."); return; }
+      setReviewOrder(order);
       await loadOrders();
     } catch {
       alert("Network error.");
@@ -99,7 +181,6 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-24">
-      {/* Header */}
       <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/95 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
@@ -118,51 +199,33 @@ export default function OrdersPage() {
         ) : orders.length === 0 ? (
           <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 py-12 text-center">
             <p className="text-slate-500">Order မရှိသေးပါ။</p>
-            <Link href="/" className="mt-3 inline-block text-sm text-emerald-400 hover:underline">
-              Products ကြည့်ရန် →
-            </Link>
+            <Link href="/" className="mt-3 inline-block text-sm text-emerald-400 hover:underline">Products ကြည့်ရန် →</Link>
           </div>
         ) : (
           orders.map((order) => (
-            <div
-              key={order.id}
-              className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-4 space-y-3"
-            >
-              {/* Order Header */}
+            <div key={order.id} className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-4 space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-mono text-xs text-slate-500">{order.orderId}</p>
                   <p className="font-semibold text-slate-200">{order.productTitle}</p>
-                  {order.gameTitle && (
-                    <p className="text-xs text-slate-500">{order.gameTitle}</p>
-                  )}
+                  {order.gameTitle && <p className="text-xs text-slate-500">{order.gameTitle}</p>}
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-emerald-400">
-                    {order.price.toLocaleString()} MMK
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Fee: {(order.feeAmount ?? 0).toLocaleString()} MMK
-                  </p>
+                  <p className="font-bold text-emerald-400">{order.price.toLocaleString()} MMK</p>
+                  <p className="text-xs text-slate-500">Fee: {(order.feeAmount ?? 0).toLocaleString()} MMK</p>
                 </div>
               </div>
 
-              {/* Status + timing */}
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[order.status] ?? "bg-slate-600/50 text-slate-400"}`}>
                   {STATUS_MM[order.status] ?? order.status}
                 </span>
-                {order.status === "sent" && order.sentAt && (
-                  <RemainingTime sentAt={order.sentAt} />
-                )}
+                {order.status === "sent" && order.sentAt && <RemainingTime sentAt={order.sentAt} />}
                 {order.completedAt && (
-                  <span className="text-xs text-slate-500">
-                    Completed: {new Date(order.completedAt).toLocaleDateString()}
-                  </span>
+                  <span className="text-xs text-slate-500">Completed: {new Date(order.completedAt).toLocaleDateString()}</span>
                 )}
               </div>
 
-              {/* Buyer Input Data */}
               {order.buyerInputData.length > 0 && (
                 <div className="rounded-lg border border-slate-700/40 bg-slate-900/50 px-3 py-2 space-y-1">
                   <p className="text-xs font-medium text-slate-500 mb-1">Order Details</p>
@@ -175,16 +238,12 @@ export default function OrdersPage() {
                 </div>
               )}
 
-              {/* Date */}
-              <p className="text-xs text-slate-600">
-                {new Date(order.createdAt).toLocaleString()}
-              </p>
+              <p className="text-xs text-slate-600">{new Date(order.createdAt).toLocaleString()}</p>
 
-              {/* Confirm Received */}
               {order.status === "sent" && (
                 <button
                   type="button"
-                  onClick={() => handleConfirm(order.id)}
+                  onClick={() => handleConfirm(order)}
                   disabled={confirmingId === order.id}
                   className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-500 disabled:opacity-60"
                 >
@@ -195,6 +254,14 @@ export default function OrdersPage() {
           ))
         )}
       </main>
+
+      {/* Review Modal */}
+      {reviewOrder && (
+        <ReviewModal
+          order={reviewOrder}
+          onClose={() => setReviewOrder(null)}
+        />
+      )}
     </div>
   );
 }

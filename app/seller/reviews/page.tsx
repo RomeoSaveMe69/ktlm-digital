@@ -49,8 +49,6 @@ export default function SellerReviewsPage() {
     } catch { alert("Network error."); } finally { setSubmitting(null); }
   };
 
-  const stars = (n: number) => "★".repeat(n) + "☆".repeat(5 - n);
-
   return (
     <div className="space-y-6">
       <div>
@@ -68,18 +66,20 @@ export default function SellerReviewsPage() {
         <div className="space-y-4">
           {reviews.map((r) => (
             <div key={r.id} className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-5 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-200">{r.productTitle}</p>
-                  <p className="text-xs text-slate-500">by {r.buyerName}</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-amber-400 text-sm">{stars(r.rating)}</span>
-                  <p className="text-[10px] text-slate-500">{new Date(r.createdAt).toLocaleDateString()}</p>
-                </div>
-              </div>
+              <p className="text-sm text-slate-200 leading-relaxed">
+                <span className="font-semibold text-emerald-400">{r.buyerName}</span>
+                {" "}မှ{" "}
+                <span className="font-semibold text-amber-400">{r.productTitle}</span>
+                {" "}အတွက်{" "}
+                <span className="font-semibold text-amber-400">{r.rating} Star</span>
+                {" "}ပေးသွားပါသည်, Review Comment မှာ{" "}
+                <span className="font-semibold text-slate-100">{r.text}</span>
+                {" "}ဖြစ်ပါတယ်
+              </p>
 
-              <p className="text-sm text-slate-200 border-l-2 border-slate-600 pl-3">&ldquo;{r.text}&rdquo;</p>
+              <p className="text-[10px] text-slate-500">
+                {new Date(r.createdAt).toLocaleDateString()}
+              </p>
 
               {r.reply ? (
                 <div className="ml-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
