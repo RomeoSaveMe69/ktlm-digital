@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { DepositRequest } from "@/lib/models/DepositRequest";
 import { apiError } from "@/lib/api-utils";
+import "@/lib/models/User";
+import "@/lib/models/PaymentMethod";
 
 export const dynamic = "force-dynamic";
 
