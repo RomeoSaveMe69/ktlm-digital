@@ -22,6 +22,31 @@ export async function GET() {
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
+    // Enforce account status on every session check
+    const status = (user as Record<string, unknown>).status as string | undefined ?? "ACTIVE";
+    const suspendedUntil = (user as Record<string, unknown>).suspendedUntil as Date | null | undefined;
+
+    if (status === "BANNED") {
+      return NextResponse.json(
+        { user: null, error: "Your account has been permanently banned." },
+        { status: 200 },
+      );
+    }
+
+    if (status === "SUSPENDED") {
+      const until = suspendedUntil ? new Date(suspendedUntil) : null;
+      if (until && until > new Date()) {
+        return NextResponse.json(
+          { user: null, error: `Account suspended until ${until.toLocaleString()}.` },
+          { status: 200 },
+        );
+      }
+      // Suspension expired — auto-reactivate
+      await User.findByIdAndUpdate(user._id, {
+        $set: { status: "ACTIVE", suspendedUntil: null },
+      });
+    }
+
     const wallets = await Wallet.find({ userId: user._id })
       .select("currency balance escrowBalance")
       .lean();

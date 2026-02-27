@@ -10,6 +10,8 @@ type UserItem = {
   role: string;
   balance: number;
   telegramUsername: string;
+  status: string;
+  suspendedUntil: string | null;
   createdAt: string;
   completedOrders: number;
 };
@@ -26,7 +28,7 @@ const SortArrow = ({ active, order }: { active: boolean; order: string }) => (
   </span>
 );
 
-const statusBadge = (s: string) => {
+const orderStatusBadge = (s: string) => {
   const m: Record<string, string> = {
     pending: "bg-amber-500/20 text-amber-400",
     approved: "bg-emerald-500/20 text-emerald-400",
@@ -39,6 +41,167 @@ const statusBadge = (s: string) => {
   return m[s] ?? "bg-slate-600/50 text-slate-400";
 };
 
+const accountStatusBadge = (s: string) => {
+  switch (s) {
+    case "ACTIVE": return "bg-emerald-500/20 text-emerald-400";
+    case "SUSPENDED": return "bg-amber-500/20 text-amber-400";
+    case "BANNED": return "bg-red-500/20 text-red-400";
+    default: return "bg-slate-600/50 text-slate-400";
+  }
+};
+
+function UserManageModal({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: UserDetail;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [status, setStatus] = useState(user.status || "ACTIVE");
+  const [suspendedUntil, setSuspendedUntil] = useState(
+    user.suspendedUntil ? new Date(user.suspendedUntil).toISOString().slice(0, 16) : "",
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSave = async () => {
+    setError("");
+    setSaving(true);
+    try {
+      const body: Record<string, unknown> = { status };
+      if (status === "SUSPENDED") {
+        if (!suspendedUntil) {
+          setError("Please select a suspension end date/time.");
+          setSaving(false);
+          return;
+        }
+        body.suspendedUntil = new Date(suspendedUntil).toISOString();
+      }
+      const res = await fetch(`/api/admin/users/${user.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to update status");
+        return;
+      }
+      onSaved();
+    } catch {
+      setError("Network error. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl border border-slate-700/60 bg-slate-900 p-6 shadow-2xl">
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-100">Manage User</h3>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-200 text-xl leading-none">&times;</button>
+        </div>
+
+        {/* User info */}
+        <div className="mb-5 grid grid-cols-2 gap-3 rounded-xl border border-slate-700/40 bg-slate-800/50 p-4 text-sm">
+          <div>
+            <p className="text-xs text-slate-500">BID</p>
+            <p className="font-mono text-emerald-400">{user.bid}</p>
+          </div>
+          {user.sid && (
+            <div>
+              <p className="text-xs text-slate-500">SID</p>
+              <p className="font-mono text-violet-400">{user.sid}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-slate-500">Name</p>
+            <p className="text-slate-200">{user.fullName || "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Email</p>
+            <p className="text-slate-200 break-all">{user.email}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Role</p>
+            <p className="capitalize text-slate-200">{user.role}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Balance</p>
+            <p className="text-slate-200">{user.balance.toLocaleString()} MMK</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Current Status</p>
+            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${accountStatusBadge(user.status)}`}>
+              {user.status || "ACTIVE"}
+            </span>
+            {user.status === "SUSPENDED" && user.suspendedUntil && (
+              <p className="mt-1 text-xs text-amber-400/80">Until: {new Date(user.suspendedUntil).toLocaleString()}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Status selector */}
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-300">Account Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="SUSPENDED">Suspend</option>
+              <option value="BANNED">Ban (Permanent)</option>
+            </select>
+          </div>
+
+          {status === "SUSPENDED" && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-300">Suspend Until</label>
+              <input
+                type="datetime-local"
+                value={suspendedUntil}
+                onChange={(e) => setSuspendedUntil(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-slate-500">The user will be auto-reactivated after this date/time.</p>
+            </div>
+          )}
+
+          {status === "BANNED" && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+              <p className="text-sm text-red-400">
+                This will permanently ban the user. They will not be able to log in until an admin manually sets their status back to Active.
+              </p>
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminUserPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -48,12 +211,14 @@ export default function AdminUserPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
 
-  // Search
   const [bidSearch, setBidSearch] = useState("");
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [deposits, setDeposits] = useState<DepositItem[]>([]);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [searching, setSearching] = useState(false);
+
+  const [manageUser, setManageUser] = useState<UserDetail | null>(null);
+  const [fixingBids, setFixingBids] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -87,6 +252,18 @@ export default function AdminUserPage() {
     setPage(1);
   };
 
+  const fetchDetail = async (bid: string) => {
+    const res = await fetch(`/api/admin/users?bid=${bid}`);
+    const data = await res.json();
+    if (res.ok && data.user) {
+      setDetail(data.user);
+      setDeposits(data.deposits ?? []);
+      setOrders(data.orders ?? []);
+      return data.user as UserDetail;
+    }
+    return null;
+  };
+
   const handleSearch = async () => {
     const q = bidSearch.trim().toUpperCase();
     if (!q) {
@@ -95,13 +272,8 @@ export default function AdminUserPage() {
     }
     setSearching(true);
     try {
-      const res = await fetch(`/api/admin/users?bid=${q}`);
-      const data = await res.json();
-      if (res.ok && data.user) {
-        setDetail(data.user);
-        setDeposits(data.deposits ?? []);
-        setOrders(data.orders ?? []);
-      } else {
+      const result = await fetchDetail(q);
+      if (!result) {
         setDetail(null);
         setDeposits([]);
         setOrders([]);
@@ -114,15 +286,48 @@ export default function AdminUserPage() {
     }
   };
 
+  const handleFixBids = async () => {
+    if (!confirm("This will assign BIDs to all users who don't have one. Continue?")) return;
+    setFixingBids(true);
+    try {
+      const res = await fetch("/api/admin/fix-users", { method: "POST" });
+      const data = await res.json();
+      alert(data.message ?? "Done");
+      fetchUsers();
+    } catch {
+      alert("Failed to fix BIDs.");
+    } finally {
+      setFixingBids(false);
+    }
+  };
+
+  const handleManageSaved = async () => {
+    setManageUser(null);
+    if (detail) {
+      await fetchDetail(detail.bid);
+    }
+    fetchUsers();
+  };
+
   const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-slate-100">Users</h2>
-        <p className="text-sm text-slate-500">
-          User အားလုံး၏ စာရင်း — BID ဖြင့် ရှာဖွေ၍ အသေးစိတ်ကြည့်ရန်
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-100">Users</h2>
+          <p className="text-sm text-slate-500">
+            Manage all users — search by BID, view details, update account status
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleFixBids}
+          disabled={fixingBids}
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-400 hover:bg-amber-500/20 disabled:opacity-50"
+        >
+          {fixingBids ? "Fixing..." : "Fix Missing BIDs"}
+        </button>
       </div>
 
       {/* Search Bar */}
@@ -146,10 +351,7 @@ export default function AdminUserPage() {
         {detail && (
           <button
             type="button"
-            onClick={() => {
-              setDetail(null);
-              setBidSearch("");
-            }}
+            onClick={() => { setDetail(null); setBidSearch(""); }}
             className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-400 hover:bg-slate-700"
           >
             Back to List
@@ -160,8 +362,17 @@ export default function AdminUserPage() {
       {/* ── Detail View ── */}
       {detail ? (
         <div className="space-y-6">
-          {/* User Info Card */}
           <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">User Info</h3>
+              <button
+                type="button"
+                onClick={() => setManageUser(detail)}
+                className="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-violet-500"
+              >
+                Manage Status
+              </button>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <p className="text-xs text-slate-500">BID</p>
@@ -179,10 +390,8 @@ export default function AdminUserPage() {
               </div>
               <div>
                 <p className="text-xs text-slate-500">Contact</p>
-                <p className="text-slate-200 text-sm">
-                  {detail.telegramUsername
-                    ? `@${detail.telegramUsername}`
-                    : detail.email}
+                <p className="text-sm text-slate-200">
+                  {detail.telegramUsername ? `@${detail.telegramUsername}` : detail.email}
                 </p>
               </div>
               <div>
@@ -200,6 +409,15 @@ export default function AdminUserPage() {
               <div>
                 <p className="text-xs text-slate-500">Registered</p>
                 <p className="text-sm text-slate-400">{new Date(detail.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Account Status</p>
+                <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${accountStatusBadge(detail.status)}`}>
+                  {detail.status || "ACTIVE"}
+                </span>
+                {detail.status === "SUSPENDED" && detail.suspendedUntil && (
+                  <p className="mt-1 text-xs text-amber-400/80">Until: {new Date(detail.suspendedUntil).toLocaleString()}</p>
+                )}
               </div>
             </div>
           </div>
@@ -229,7 +447,7 @@ export default function AdminUserPage() {
                         <td className="px-4 py-2 text-slate-200">{d.amount.toLocaleString()} MMK</td>
                         <td className="px-4 py-2 font-mono text-xs text-slate-400">{d.transactionId}</td>
                         <td className="px-4 py-2">
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge(d.status)}`}>{d.status}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${orderStatusBadge(d.status)}`}>{d.status}</span>
                         </td>
                       </tr>
                     ))}
@@ -265,7 +483,7 @@ export default function AdminUserPage() {
                         <td className="px-4 py-2 text-slate-200">{o.productTitle}</td>
                         <td className="px-4 py-2 text-slate-200">{o.price.toLocaleString()} MMK</td>
                         <td className="px-4 py-2">
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge(o.status)}`}>{o.status}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${orderStatusBadge(o.status)}`}>{o.status}</span>
                         </td>
                         <td className="px-4 py-2 text-xs text-slate-400">{new Date(o.createdAt).toLocaleString()}</td>
                       </tr>
@@ -279,7 +497,6 @@ export default function AdminUserPage() {
       ) : (
         /* ── Table View ── */
         <>
-          {/* Controls */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-400">
               <span>Show</span>
@@ -294,9 +511,7 @@ export default function AdminUserPage() {
               </select>
               <span>per page</span>
             </div>
-            <p className="text-sm text-slate-500">
-              Total: {total} users
-            </p>
+            <p className="text-sm text-slate-500">Total: {total} users</p>
           </div>
 
           {loading ? (
@@ -309,26 +524,15 @@ export default function AdminUserPage() {
                     <th className="px-4 py-3">UID (BID)</th>
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Contact</th>
-                    <th
-                      className="px-4 py-3 cursor-pointer select-none hover:text-slate-200"
-                      onClick={() => handleSort("balance")}
-                    >
-                      Balance
-                      <SortArrow active={sortBy === "balance"} order={sortOrder} />
+                    <th className="px-4 py-3 cursor-pointer select-none hover:text-slate-200" onClick={() => handleSort("balance")}>
+                      Balance <SortArrow active={sortBy === "balance"} order={sortOrder} />
                     </th>
-                    <th
-                      className="px-4 py-3 cursor-pointer select-none hover:text-slate-200"
-                      onClick={() => handleSort("createdAt")}
-                    >
-                      Register Date
-                      <SortArrow active={sortBy === "createdAt"} order={sortOrder} />
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 cursor-pointer select-none hover:text-slate-200" onClick={() => handleSort("createdAt")}>
+                      Register Date <SortArrow active={sortBy === "createdAt"} order={sortOrder} />
                     </th>
-                    <th
-                      className="px-4 py-3 cursor-pointer select-none hover:text-slate-200"
-                      onClick={() => handleSort("completedOrders")}
-                    >
-                      Orders Done
-                      <SortArrow active={sortBy === "completedOrders"} order={sortOrder} />
+                    <th className="px-4 py-3 cursor-pointer select-none hover:text-slate-200" onClick={() => handleSort("completedOrders")}>
+                      Orders Done <SortArrow active={sortBy === "completedOrders"} order={sortOrder} />
                     </th>
                     <th className="px-4 py-3">Action</th>
                   </tr>
@@ -342,29 +546,36 @@ export default function AdminUserPage() {
                         {u.telegramUsername ? `@${u.telegramUsername}` : u.email}
                       </td>
                       <td className="px-4 py-3 text-slate-200">{u.balance.toLocaleString()}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${accountStatusBadge(u.status)}`}>
+                          {u.status || "ACTIVE"}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3 text-slate-300">{u.completedOrders}</td>
                       <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setBidSearch(u.bid);
-                            setTimeout(() => handleSearch(), 0);
-                            // Directly fetch detail
-                            (async () => {
-                              const res = await fetch(`/api/admin/users?bid=${u.bid}`);
-                              const data = await res.json();
-                              if (res.ok && data.user) {
-                                setDetail(data.user);
-                                setDeposits(data.deposits ?? []);
-                                setOrders(data.orders ?? []);
-                              }
-                            })();
-                          }}
-                          className="text-emerald-400 hover:text-emerald-300 text-xs font-medium"
-                        >
-                          View
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const result = await fetchDetail(u.bid);
+                              if (result) setBidSearch(u.bid);
+                            }}
+                            className="text-emerald-400 hover:text-emerald-300 text-xs font-medium"
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const result = await fetchDetail(u.bid);
+                              if (result) setManageUser(result);
+                            }}
+                            className="text-violet-400 hover:text-violet-300 text-xs font-medium"
+                          >
+                            Manage
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -373,7 +584,6 @@ export default function AdminUserPage() {
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
               <button
@@ -384,9 +594,7 @@ export default function AdminUserPage() {
               >
                 Prev
               </button>
-              <span className="text-sm text-slate-400">
-                Page {page} / {totalPages}
-              </span>
+              <span className="text-sm text-slate-400">Page {page} / {totalPages}</span>
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -398,6 +606,15 @@ export default function AdminUserPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Management Modal */}
+      {manageUser && (
+        <UserManageModal
+          user={manageUser}
+          onClose={() => setManageUser(null)}
+          onSaved={handleManageSaved}
+        />
       )}
     </div>
   );

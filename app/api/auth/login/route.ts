@@ -45,6 +45,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check account status before issuing a session
+    const status = user.status ?? "ACTIVE";
+
+    if (status === "BANNED") {
+      return NextResponse.json(
+        { error: "Your account has been permanently banned." },
+        { status: 403 },
+      );
+    }
+
+    if (status === "SUSPENDED") {
+      const until = user.suspendedUntil ? new Date(user.suspendedUntil) : null;
+      if (until && until > new Date()) {
+        return NextResponse.json(
+          { error: `Account suspended until ${until.toLocaleString()}.` },
+          { status: 403 },
+        );
+      }
+      // Suspension expired — auto-reactivate
+      await User.findByIdAndUpdate(user._id, {
+        $set: { status: "ACTIVE", suspendedUntil: null },
+      });
+    }
+
     const token = await createSession({
       userId: user._id.toString(),
       email: user.email,

@@ -4,6 +4,8 @@ import mongoose, { Schema, model, models } from "mongoose";
 export type UserRole = "buyer" | "seller" | "admin";
 /** KYC status for seller verification. */
 export type KycStatus = "pending" | "approved" | "rejected";
+/** Account status for admin moderation. */
+export type AccountStatus = "ACTIVE" | "SUSPENDED" | "BANNED";
 
 export interface IUser {
   _id: mongoose.Types.ObjectId;
@@ -26,6 +28,10 @@ export interface IUser {
   pendingBalance: number;
   /** Seller: money submitted for withdrawal, awaiting admin approval. */
   withdrawPendingBalance: number;
+  /** Account moderation status. */
+  status: AccountStatus;
+  /** If suspended, the date/time until which the suspension lasts. */
+  suspendedUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,6 +65,12 @@ const userSchema = new Schema<IUser>(
     withdrawableBalance: { type: Number, default: 0, min: 0 },
     pendingBalance: { type: Number, default: 0, min: 0 },
     withdrawPendingBalance: { type: Number, default: 0, min: 0 },
+    status: {
+      type: String,
+      enum: ["ACTIVE", "SUSPENDED", "BANNED"],
+      default: "ACTIVE",
+    },
+    suspendedUntil: { type: Date },
   },
   { timestamps: true },
 );
