@@ -4,6 +4,8 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Order } from "@/lib/models/Order";
 import { apiError } from "@/lib/api-utils";
+import "@/lib/models/Product";
+import "@/lib/models/User";
 
 export const dynamic = "force-dynamic";
 

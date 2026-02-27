@@ -4,6 +4,9 @@ import { connectDB } from "@/lib/db";
 import { Cart } from "@/lib/models/Cart";
 import { Product } from "@/lib/models/Product";
 import { apiError } from "@/lib/api-utils";
+import "@/lib/models/Game";
+import "@/lib/models/ProductCategory";
+import "@/lib/models/User";
 
 export const dynamic = "force-dynamic";
 

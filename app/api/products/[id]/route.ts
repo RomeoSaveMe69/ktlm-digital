@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Product } from "@/lib/models/Product";
 import { apiError } from "@/lib/api-utils";
+import "@/lib/models/Game";
+import "@/lib/models/ProductCategory";
+import "@/lib/models/User";
 
 export const dynamic = "force-dynamic";
 

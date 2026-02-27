@@ -6,6 +6,7 @@ import { Order } from "@/lib/models/Order";
 import { Product } from "@/lib/models/Product";
 import { User } from "@/lib/models/User";
 import { apiError } from "@/lib/api-utils";
+import "@/lib/models/Game";
 
 export const dynamic = "force-dynamic";
 
