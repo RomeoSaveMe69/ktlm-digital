@@ -18,7 +18,7 @@ type Order = {
   productTitle: string;
   gameTitle: string;
   price: number;
-  platformFee: number;
+  feeAmount: number;
   buyerInputData: OrderInputData[];
   status: string;
   sentAt: string | null;
@@ -142,7 +142,7 @@ export default function OrdersPage() {
                     {order.price.toLocaleString()} MMK
                   </p>
                   <p className="text-xs text-slate-500">
-                    Fee: {order.platformFee.toLocaleString()} MMK
+                    Fee: {(order.feeAmount ?? 0).toLocaleString()} MMK
                   </p>
                 </div>
               </div>
