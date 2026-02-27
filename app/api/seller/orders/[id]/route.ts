@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Order } from "@/lib/models/Order";
+import { User } from "@/lib/models/User";
+import { Product } from "@/lib/models/Product";
 import { apiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +15,13 @@ const STATUS_FLOW: Record<string, string> = {
 };
 
 /**
- * PATCH /api/seller/orders/[id] – advance order status: pending→processing→sent.
+ * PATCH /api/seller/orders/[id] – advance order status: pending→processing→sent, or cancel.
  * Body: { action: 'advance' | 'cancel' }
- * Setting status to 'sent' records sentAt for the 24h auto-complete timer.
+ *
+ * Cancel logic (Escrow refund):
+ *   - Order must be 'pending' (not yet processing/sent)
+ *   - Buyer's balance is atomically refunded (price returned)
+ *   - Product inStock is incremented back
  */
 export async function PATCH(
   request: Request,
@@ -51,7 +57,25 @@ export async function PATCH(
           { status: 400 },
         );
       }
+
       order.status = "cancelled";
+      await order.save();
+
+      // Refund buyer's balance
+      await User.findByIdAndUpdate(order.buyerId, {
+        $inc: { balance: order.price },
+      });
+
+      // Restore product stock
+      await Product.findByIdAndUpdate(order.productId, {
+        $inc: { inStock: 1 },
+      });
+
+      return NextResponse.json({
+        ok: true,
+        status: "cancelled",
+        refunded: order.price,
+      });
     } else {
       const nextStatus = STATUS_FLOW[order.status];
       if (!nextStatus) {
@@ -64,10 +88,13 @@ export async function PATCH(
       if (nextStatus === "sent") {
         order.sentAt = new Date();
       }
+      await order.save();
+      return NextResponse.json({
+        ok: true,
+        status: order.status,
+        sentAt: order.sentAt ?? null,
+      });
     }
-
-    await order.save();
-    return NextResponse.json({ ok: true, status: order.status, sentAt: order.sentAt ?? null });
   } catch (err) {
     console.error("Seller order PATCH error:", err);
     return apiError("Failed to update order.", 500);

@@ -1,5 +1,4 @@
 import mongoose, { Schema, model, models } from "mongoose";
-import { nanoid } from "nanoid";
 
 /**
  * Order status flow:
@@ -55,7 +54,14 @@ const orderSchema = new Schema<IOrder>(
     orderId: {
       type: String,
       unique: true,
-      default: () => `ORD-${nanoid(10).toUpperCase()}`,
+      default: () => {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let id = "ORD-";
+        for (let i = 0; i < 10; i++) {
+          id += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return id;
+      },
     },
     buyerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     sellerId: { type: Schema.Types.ObjectId, ref: "User", required: true },

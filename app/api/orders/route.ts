@@ -20,8 +20,11 @@ export async function GET() {
     }
     await connectDB();
     const orders = await Order.find({ buyerId: session.userId })
-      .populate("productId", "customTitle title gameId productCategoryId")
-      .populate({ path: "productId", populate: { path: "gameId", select: "title" } })
+      .populate({
+        path: "productId",
+        select: "customTitle title gameId",
+        populate: { path: "gameId", select: "title" },
+      })
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
