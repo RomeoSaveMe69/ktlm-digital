@@ -12,6 +12,7 @@ type DepositReq = {
   userId: string;
   userEmail: string;
   userFullName: string;
+  userBid: string;
   amount: number;
   transactionId: string;
   screenshot: string | null;
@@ -166,6 +167,11 @@ export default function AdminRechargePage() {
                   {/* Info */}
                   <div className="min-w-0 flex-1 text-sm space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
+                      {r.userBid && (
+                        <span className="rounded bg-slate-700/80 px-1.5 py-0.5 font-mono text-xs text-emerald-400">
+                          {r.userBid}
+                        </span>
+                      )}
                       <span className="font-medium text-slate-200">
                         {r.userFullName || r.userEmail}
                       </span>

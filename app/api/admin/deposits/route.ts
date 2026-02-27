@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     }
 
     const requests = await DepositRequest.find(query)
-      .populate("userId", "email fullName")
+      .populate("userId", "email fullName bid")
       .populate("paymentMethodId", "methodName type")
       .sort({ createdAt: -1 })
       .lean();
@@ -38,6 +38,7 @@ export async function GET(request: Request) {
           "",
         userEmail: (r.userId as { email?: string })?.email ?? "",
         userFullName: (r.userId as { fullName?: string })?.fullName ?? "",
+        userBid: (r.userId as { bid?: string })?.bid ?? "",
         amount: r.amount,
         transactionId: r.transactionId,
         screenshot: r.screenshot ?? null,

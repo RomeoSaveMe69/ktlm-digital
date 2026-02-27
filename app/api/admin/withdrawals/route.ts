@@ -18,7 +18,7 @@ export async function GET() {
     await connectDB();
 
     const requests = await WithdrawalRequest.find()
-      .populate("sellerId", "email fullName")
+      .populate("sellerId", "email fullName sid")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -27,9 +27,11 @@ export async function GET() {
         _id: r._id.toString(),
         sellerEmail: (r.sellerId as { email?: string })?.email ?? "Unknown",
         sellerName: (r.sellerId as { fullName?: string })?.fullName ?? "",
+        sellerSid: (r.sellerId as { sid?: string })?.sid ?? "",
         amount: r.amount,
         paymentMethod: r.paymentMethod,
         accountName: r.accountName,
+        paymentNumber: r.paymentNumber ?? "",
         status: r.status,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,

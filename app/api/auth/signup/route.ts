@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
 import { Wallet } from "@/lib/models/Wallet";
+import { getNextBid } from "@/lib/models/Counter";
 import { createSession, setSessionCookie } from "@/lib/auth";
 import { apiError, normalizeErrorMessage } from "@/lib/api-utils";
 
@@ -44,7 +45,9 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const bid = await getNextBid();
     const user = await User.create({
+      bid,
       email: trimmedEmail,
       passwordHash,
       fullName: fullName?.trim() || undefined,

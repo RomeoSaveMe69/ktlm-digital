@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     const amount = Number(body.amount);
     const paymentMethod = String(body.paymentMethod ?? "").trim();
     const accountName = String(body.accountName ?? "").trim();
+    const paymentNumber = String(body.paymentNumber ?? "").trim();
 
     if (!amount || isNaN(amount) || amount <= 0) {
       return apiError("Amount must be a positive number", 400);
@@ -39,6 +40,9 @@ export async function POST(request: Request) {
     }
     if (!accountName) {
       return apiError("Account name is required", 400);
+    }
+    if (!paymentNumber) {
+      return apiError("Payment number is required", 400);
     }
 
     await connectDB();
@@ -75,6 +79,7 @@ export async function POST(request: Request) {
           amount,
           paymentMethod,
           accountName,
+          paymentNumber,
           status: "pending",
         },
       ],

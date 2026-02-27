@@ -8,6 +8,7 @@ export interface IWithdrawalRequest {
   amount: number;
   paymentMethod: string;
   accountName: string;
+  paymentNumber: string;
   status: WithdrawalStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -19,6 +20,7 @@ const withdrawalRequestSchema = new Schema<IWithdrawalRequest>(
     amount: { type: Number, required: true, min: 1 },
     paymentMethod: { type: String, required: true, trim: true },
     accountName: { type: String, required: true, trim: true },
+    paymentNumber: { type: String, default: "", trim: true },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],

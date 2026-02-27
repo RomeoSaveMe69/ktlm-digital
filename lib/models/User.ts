@@ -7,6 +7,10 @@ export type KycStatus = "pending" | "approved" | "rejected";
 
 export interface IUser {
   _id: mongoose.Types.ObjectId;
+  /** Buyer ID, auto-assigned on signup (e.g. "BID0000001"). */
+  bid: string;
+  /** Seller ID, auto-assigned when role changes to seller (e.g. "SID0000001"). */
+  sid?: string;
   email: string;
   passwordHash: string;
   fullName?: string;
@@ -28,6 +32,8 @@ export interface IUser {
 
 const userSchema = new Schema<IUser>(
   {
+    bid: { type: String, unique: true, sparse: true },
+    sid: { type: String, unique: true, sparse: true },
     email: {
       type: String,
       required: true,

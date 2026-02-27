@@ -20,6 +20,7 @@ export default function SellerWalletPage() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [accountName, setAccountName] = useState("");
+  const [paymentNumber, setPaymentNumber] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawMsg, setWithdrawMsg] = useState<{
     type: "success" | "error";
@@ -113,6 +114,10 @@ export default function SellerWalletPage() {
       setWithdrawMsg({ type: "error", text: "Account name is required." });
       return;
     }
+    if (!paymentNumber.trim()) {
+      setWithdrawMsg({ type: "error", text: "Payment number is required." });
+      return;
+    }
     setWithdrawing(true);
     try {
       const res = await fetch("/api/seller/wallet/withdraw", {
@@ -122,6 +127,7 @@ export default function SellerWalletPage() {
           amount,
           paymentMethod: paymentMethod.trim(),
           accountName: accountName.trim(),
+          paymentNumber: paymentNumber.trim(),
         }),
       });
       const data = await res.json();
@@ -135,6 +141,7 @@ export default function SellerWalletPage() {
         setWithdrawAmount("");
         setPaymentMethod("");
         setAccountName("");
+        setPaymentNumber("");
       } else {
         setWithdrawMsg({
           type: "error",
@@ -293,7 +300,19 @@ export default function SellerWalletPage() {
               type="text"
               value={accountName}
               onChange={(e) => setAccountName(e.target.value)}
-              placeholder="e.g. 09XXXXXXXX or account holder name"
+              placeholder="e.g. account holder name"
+              className="w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2.5 text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm text-slate-300">
+              Payment Number
+            </label>
+            <input
+              type="text"
+              value={paymentNumber}
+              onChange={(e) => setPaymentNumber(e.target.value)}
+              placeholder="e.g. 09XXXXXXXX"
               className="w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2.5 text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>

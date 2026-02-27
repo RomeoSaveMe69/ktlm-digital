@@ -6,9 +6,11 @@ type WithdrawalItem = {
   _id: string;
   sellerEmail: string;
   sellerName: string;
+  sellerSid: string;
   amount: number;
   paymentMethod: string;
   accountName: string;
+  paymentNumber: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -93,6 +95,7 @@ export default function AdminWithdrawPage() {
                   <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Payment Method</th>
                   <th className="px-4 py-3">Account Name</th>
+                  <th className="px-4 py-3">Payment Number</th>
                   <th className="px-4 py-3">Requested</th>
                   <th className="px-4 py-3 text-right">Action</th>
                 </tr>
@@ -101,14 +104,12 @@ export default function AdminWithdrawPage() {
                 {pending.map((w) => (
                   <tr key={w._id} className="hover:bg-slate-800/80">
                     <td className="px-4 py-3">
+                      {w.sellerSid && (
+                        <p className="font-mono text-xs text-violet-400">{w.sellerSid}</p>
+                      )}
                       <p className="text-slate-200">
                         {w.sellerName || w.sellerEmail}
                       </p>
-                      {w.sellerName && (
-                        <p className="text-xs text-slate-500">
-                          {w.sellerEmail}
-                        </p>
-                      )}
                     </td>
                     <td className="px-4 py-3 font-semibold text-slate-200">
                       {w.amount.toLocaleString()} MMK
@@ -118,6 +119,9 @@ export default function AdminWithdrawPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-300">
                       {w.accountName}
+                    </td>
+                    <td className="px-4 py-3 text-slate-400">
+                      {w.paymentNumber || "—"}
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-400">
                       {new Date(w.createdAt).toLocaleString()}
@@ -163,6 +167,7 @@ export default function AdminWithdrawPage() {
                   <th className="px-4 py-3">Seller</th>
                   <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Payment</th>
+                  <th className="px-4 py-3">Number</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Date</th>
                 </tr>
@@ -171,6 +176,7 @@ export default function AdminWithdrawPage() {
                 {history.map((w) => (
                   <tr key={w._id} className="hover:bg-slate-800/80">
                     <td className="px-4 py-3 text-slate-300">
+                      {w.sellerSid && <span className="mr-1 font-mono text-xs text-violet-400">{w.sellerSid}</span>}
                       {w.sellerName || w.sellerEmail}
                     </td>
                     <td className="px-4 py-3 text-slate-200">
@@ -178,6 +184,9 @@ export default function AdminWithdrawPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-400">
                       {w.paymentMethod}
+                    </td>
+                    <td className="px-4 py-3 text-slate-400">
+                      {w.paymentNumber || "—"}
                     </td>
                     <td className="px-4 py-3">
                       <span

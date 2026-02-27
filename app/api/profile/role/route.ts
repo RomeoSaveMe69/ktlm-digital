@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
+import { getNextSid } from "@/lib/models/Counter";
 
 /** PATCH: Request role change (e.g. buyer -> seller). Only buyer can become seller. */
 export async function PATCH(request: Request) {
@@ -30,9 +31,12 @@ export async function PATCH(request: Request) {
     }
 
     user.role = "seller";
+    if (!user.sid) {
+      user.sid = await getNextSid();
+    }
     await user.save();
 
-    return NextResponse.json({ role: user.role });
+    return NextResponse.json({ role: user.role, sid: user.sid });
   } catch (err) {
     console.error("Role update error:", err);
     return NextResponse.json(
