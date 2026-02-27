@@ -12,7 +12,8 @@ const AUTO_COMPLETE_HOURS = 24;
 /**
  * POST /api/cron/auto-complete
  * Finds all orders with status 'sent' where sentAt + 24h < now,
- * marks them 'completed', credits seller, increments totalSold.
+ * marks them 'completed', moves seller funds from pendingBalance → withdrawableBalance,
+ * and increments totalSold.
  *
  * Call via Vercel Cron or any external cron service every ~15 minutes.
  * Protect with a CRON_SECRET header in production.
@@ -44,13 +45,22 @@ export async function POST(request: Request) {
     let completedCount = 0;
 
     for (const order of expiredOrders) {
+      // Use new field if available, fall back to legacy
+      const sellerAmount = order.sellerReceivedAmount || order.sellerAmount || 0;
+
       await Order.findByIdAndUpdate(order._id, {
         status: "completed",
         completedAt: now,
       });
+
+      // Move from pendingBalance to withdrawableBalance
       await User.findByIdAndUpdate(order.sellerId, {
-        $inc: { withdrawableBalance: order.sellerAmount },
+        $inc: {
+          pendingBalance: -sellerAmount,
+          withdrawableBalance: sellerAmount,
+        },
       });
+
       await Product.findByIdAndUpdate(order.productId, {
         $inc: { totalSold: 1 },
       });

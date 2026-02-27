@@ -10,8 +10,6 @@ import "@/lib/models/Game";
 
 export const dynamic = "force-dynamic";
 
-const PLATFORM_FEE_RATE = 0.005; // 0.5%
-
 /** GET /api/orders – list current buyer's orders. */
 export async function GET() {
   try {
@@ -42,7 +40,8 @@ export async function GET() {
         gameTitle:
           (o.productId as { gameId?: { title?: string } })?.gameId?.title ?? "",
         price: o.price,
-        platformFee: o.platformFee,
+        feeAmount: o.feeAmount ?? o.platformFee ?? 0,
+        sellerReceivedAmount: o.sellerReceivedAmount ?? o.sellerAmount ?? 0,
         buyerInputData: o.buyerInputData,
         status: o.status,
         sentAt: o.sentAt ?? null,
@@ -57,8 +56,11 @@ export async function GET() {
 }
 
 /**
- * POST /api/orders – "Buy Now": validate balance, deduct, create order.
+ * POST /api/orders – "Buy Now": validate balance, deduct full price, create order.
  * Body: { productId, buyerInputData: [{ label, value }] }
+ *
+ * Escrow: buyer's full price is held by the system.
+ * Fee calculation happens later when seller marks "sent".
  */
 export async function POST(request: Request) {
   try {
@@ -90,7 +92,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Product is out of stock." }, { status: 400 });
     }
 
-    // Validate required buyer inputs
     const missing = (product.buyerInputs ?? [])
       .filter((bi: { label: string; isRequired: boolean }) => bi.isRequired)
       .filter((bi: { label: string; isRequired: boolean }) => {
@@ -106,10 +107,8 @@ export async function POST(request: Request) {
     }
 
     const price = product.price;
-    const platformFee = Math.round(price * PLATFORM_FEE_RATE);
-    const sellerAmount = price - platformFee;
 
-    // Atomically deduct buyer balance
+    // Atomically deduct buyer balance (full price held in escrow)
     const buyer = await User.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(String(session.userId)),
@@ -128,13 +127,16 @@ export async function POST(request: Request) {
     // Reduce product stock
     await Product.findByIdAndUpdate(productId, { $inc: { inStock: -1 } });
 
+    // Fee fields are 0 at order creation; calculated when seller marks "sent"
     const order = await Order.create({
       buyerId: new mongoose.Types.ObjectId(String(session.userId)),
       sellerId: product.sellerId,
       productId: product._id,
       price,
-      platformFee,
-      sellerAmount,
+      platformFee: 0,
+      sellerAmount: 0,
+      feeAmount: 0,
+      sellerReceivedAmount: 0,
       buyerInputData,
       status: "pending",
     });

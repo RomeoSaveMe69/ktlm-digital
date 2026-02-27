@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Order } from "@/lib/models/Order";
+import { User } from "@/lib/models/User";
+import { Product } from "@/lib/models/Product";
 
 const STATUSES = [
   "pending",
@@ -12,7 +14,12 @@ const STATUSES = [
   "disputed",
 ] as const;
 
-/** PATCH: Update order status (admin only) */
+/**
+ * PATCH: Update order status (admin only).
+ * Handles escrow balance movements:
+ *   - cancelled: refund buyer + reverse seller pendingBalance if 'sent'
+ *   - completed: move seller pendingBalance → withdrawableBalance if from 'sent'
+ */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -35,15 +42,51 @@ export async function PATCH(
       );
     }
     await connectDB();
-    const update: Record<string, unknown> = { status };
-    if (status === "completed") {
-      update.completedAt = new Date();
-    }
-    const order = await Order.findByIdAndUpdate(id, update, {
-      new: true,
-    }).lean();
+
+    const order = await Order.findById(id);
     if (!order)
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
+
+    const prevStatus = order.status;
+    const sellerAmount = order.sellerReceivedAmount || order.sellerAmount || 0;
+
+    // Handle cancellation: refund buyer, reverse seller pending if applicable
+    if (status === "cancelled" && prevStatus !== "cancelled") {
+      // Refund buyer
+      await User.findByIdAndUpdate(order.buyerId, {
+        $inc: { balance: order.price },
+      });
+      // Restore stock
+      await Product.findByIdAndUpdate(order.productId, {
+        $inc: { inStock: 1 },
+      });
+      // If was 'sent', seller had pendingBalance credited — reverse it
+      if (prevStatus === "sent" && sellerAmount > 0) {
+        await User.findByIdAndUpdate(order.sellerId, {
+          $inc: { pendingBalance: -sellerAmount },
+        });
+      }
+    }
+
+    // Handle completion from 'sent': move pendingBalance → withdrawableBalance
+    if (status === "completed" && prevStatus === "sent" && sellerAmount > 0) {
+      await User.findByIdAndUpdate(order.sellerId, {
+        $inc: {
+          pendingBalance: -sellerAmount,
+          withdrawableBalance: sellerAmount,
+        },
+      });
+      await Product.findByIdAndUpdate(order.productId, {
+        $inc: { totalSold: 1 },
+      });
+    }
+
+    order.status = status;
+    if (status === "completed") {
+      order.completedAt = new Date();
+    }
+    await order.save();
+
     return NextResponse.json({
       order: { id: order._id.toString(), status: order.status },
     });

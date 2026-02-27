@@ -14,6 +14,7 @@ const SIDEBAR_NAV = [
   { href: "/admin/withdraw", label: "Withdraw", icon: "💸" },
   { href: "/admin/chat", label: "Chat", icon: "💬" },
   { href: "/admin/storage", label: "Storage", icon: "🗄️" },
+  { href: "/admin/settings", label: "Settings", icon: "⚙️" },
 ];
 
 export default function AdminLayout({

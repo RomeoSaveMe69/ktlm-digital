@@ -4,6 +4,7 @@ import Link from "next/link";
 const SIDEBAR_NAV = [
   { href: "/seller", label: "Overview", icon: "📊" },
   { href: "/seller/order", label: "Order", icon: "📦" },
+  { href: "/seller/wallet", label: "Wallet", icon: "💳" },
   { href: "/seller/chat", label: "Chat", icon: "💬" },
   { href: "/seller/product", label: "Product", icon: "🛒" },
   { href: "/seller/product-info", label: "Product Info", icon: "📄" },

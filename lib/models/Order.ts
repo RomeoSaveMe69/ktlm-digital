@@ -35,10 +35,14 @@ export interface IOrder {
   productId: mongoose.Types.ObjectId;
   /** Selling price at time of order (snapshot). */
   price: number;
-  /** Platform fee (0.5% of price). */
+  /** Platform fee (0.5% of price). Legacy alias, kept for backward compat. */
   platformFee: number;
-  /** Amount credited to seller on completion = price - platformFee. */
+  /** Amount credited to seller on completion = price - platformFee. Legacy alias. */
   sellerAmount: number;
+  /** Trade fee calculated from SiteSetting at time of seller sending. */
+  feeAmount: number;
+  /** Net amount seller receives = price - feeAmount. */
+  sellerReceivedAmount: number;
   /** Buyer-filled form data at checkout (dynamic, from product.buyerInputs). */
   buyerInputData: IBuyerInputData[];
   status: OrderStatus;
@@ -69,6 +73,8 @@ const orderSchema = new Schema<IOrder>(
     price: { type: Number, required: true, min: 0 },
     platformFee: { type: Number, default: 0, min: 0 },
     sellerAmount: { type: Number, default: 0, min: 0 },
+    feeAmount: { type: Number, default: 0, min: 0 },
+    sellerReceivedAmount: { type: Number, default: 0, min: 0 },
     buyerInputData: {
       type: [
         {

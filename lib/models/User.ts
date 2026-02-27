@@ -14,8 +14,14 @@ export interface IUser {
   kycStatus: KycStatus;
   telegramChatId?: string;
   telegramUsername?: string;
+  /** Buyer: spendable deposit balance. Seller: transferred from withdrawableBalance via exchange. */
   balance: number;
+  /** Seller: confirmed sale earnings available for withdrawal or exchange. */
   withdrawableBalance: number;
+  /** Seller: money from sent (but not yet buyer-confirmed) orders. */
+  pendingBalance: number;
+  /** Seller: money submitted for withdrawal, awaiting admin approval. */
+  withdrawPendingBalance: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,12 +50,9 @@ const userSchema = new Schema<IUser>(
     telegramChatId: { type: String },
     telegramUsername: { type: String, trim: true },
     balance: { type: Number, default: 0, min: 0 },
-    /**
-     * Seller earnings held in escrow until withdrawal.
-     * Incremented when an order is completed (after 0.5% platform fee deduction).
-     * Separate from buyer `balance` so each role's funds stay isolated.
-     */
     withdrawableBalance: { type: Number, default: 0, min: 0 },
+    pendingBalance: { type: Number, default: 0, min: 0 },
+    withdrawPendingBalance: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );

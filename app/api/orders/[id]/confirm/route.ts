@@ -11,10 +11,12 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/orders/[id]/confirm – buyer confirms receipt.
+ *
  * Escrow Settlement:
  *   1. Order status → 'completed', completedAt = now
- *   2. Seller's withdrawableBalance += sellerAmount (price - platformFee)
- *   3. Product.totalSold += 1
+ *   2. Seller's pendingBalance -= sellerReceivedAmount
+ *   3. Seller's withdrawableBalance += sellerReceivedAmount (Total Sale Money)
+ *   4. Product.totalSold += 1
  */
 export async function POST(
   _request: Request,
@@ -46,13 +48,19 @@ export async function POST(
       );
     }
 
+    // Use new field if available, fall back to legacy
+    const sellerAmount = order.sellerReceivedAmount || order.sellerAmount || 0;
+
     order.status = "completed";
     order.completedAt = new Date();
     await order.save();
 
-    // Escrow settlement: credit seller
+    // Move from pendingBalance to withdrawableBalance
     await User.findByIdAndUpdate(order.sellerId, {
-      $inc: { withdrawableBalance: order.sellerAmount },
+      $inc: {
+        pendingBalance: -sellerAmount,
+        withdrawableBalance: sellerAmount,
+      },
     });
 
     // Increment product totalSold
