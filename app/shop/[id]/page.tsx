@@ -7,6 +7,9 @@ import { useParams } from "next/navigation";
 type SellerProfile = {
   id: string;
   name: string;
+  shopName: string;
+  shopDescription: string;
+  profileImage: string;
   createdAt: string;
   totalProducts: number;
   totalSold: number;
@@ -102,10 +105,19 @@ export default function SellerProfilePage() {
       <main className="mx-auto max-w-2xl px-4 pt-8 space-y-6">
         {/* Profile Card */}
         <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 p-6 text-center space-y-4">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-2xl font-bold text-emerald-400">
-            {profile.name.charAt(0).toUpperCase()}
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 overflow-hidden">
+            {profile.profileImage ? (
+              <img src={profile.profileImage} alt={profile.shopName || profile.name} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-2xl font-bold text-emerald-400">
+                {(profile.shopName || profile.name).charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
-          <h2 className="text-xl font-bold text-slate-100">{profile.name}</h2>
+          <h2 className="text-xl font-bold text-slate-100">{profile.shopName || profile.name}</h2>
+          {profile.shopDescription && (
+            <p className="text-sm text-slate-400">{profile.shopDescription}</p>
+          )}
           <p className="text-sm text-slate-500">
             Member since {new Date(profile.createdAt).toLocaleDateString()}
           </p>

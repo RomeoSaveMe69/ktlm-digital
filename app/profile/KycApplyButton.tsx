@@ -11,9 +11,9 @@ export function KycApplyButton() {
       <button
         type="button"
         onClick={() => setShowModal(true)}
-        className="w-full rounded-xl border border-emerald-500/50 bg-emerald-500/10 py-3 px-4 text-center font-medium text-emerald-400 transition hover:bg-emerald-500/20"
+        className="text-sm text-slate-500 hover:text-emerald-400 transition underline underline-offset-2"
       >
-        Apply to be a Seller
+        Want to sell? Apply to be a Seller →
       </button>
       {showModal && <KycApplyModal onClose={() => setShowModal(false)} />}
     </>

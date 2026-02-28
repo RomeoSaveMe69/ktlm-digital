@@ -19,12 +19,14 @@ export async function GET(
     const p = await Product.findOne({ _id: id, status: "active", isActive: { $ne: false } })
       .populate("gameId", "title image")
       .populate("productCategoryId", "title")
-      .populate("sellerId", "fullName email")
+      .populate("sellerId", "fullName email shopName profileImage")
       .lean();
 
     if (!p) {
       return NextResponse.json({ error: "Product not found." }, { status: 404 });
     }
+
+    const seller = p.sellerId as { _id?: { toString(): string }; fullName?: string; email?: string; shopName?: string; profileImage?: string } | null;
 
     return NextResponse.json({
       product: {
@@ -35,11 +37,9 @@ export async function GET(
         categoryId:
           (p.productCategoryId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
         categoryTitle: (p.productCategoryId as { title?: string })?.title ?? "",
-        sellerId: (p.sellerId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
-        sellerName:
-          (p.sellerId as { fullName?: string })?.fullName ||
-          (p.sellerId as { email?: string })?.email ||
-          "Seller",
+        sellerId: seller?._id?.toString?.() ?? "",
+        sellerName: seller?.shopName || seller?.fullName || seller?.email || "Seller",
+        sellerImage: seller?.profileImage ?? "",
         price: p.price,
         inStock: p.inStock,
         deliveryTime: p.deliveryTime,

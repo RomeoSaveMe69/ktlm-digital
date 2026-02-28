@@ -33,13 +33,15 @@ export async function GET(request: Request) {
     const products = await Product.find(query)
       .populate("gameId", "title image")
       .populate("productCategoryId", "title")
-      .populate("sellerId", "fullName email")
+      .populate("sellerId", "fullName email shopName profileImage")
       .sort(sortObj)
       .limit(limit)
       .lean();
 
     return NextResponse.json({
-      products: products.map((p) => ({
+      products: products.map((p) => {
+        const seller = p.sellerId as { _id?: { toString(): string }; fullName?: string; email?: string; shopName?: string; profileImage?: string } | null;
+        return {
         id: p._id.toString(),
         customTitle: p.customTitle || p.title,
         gameId: (p.gameId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
@@ -47,18 +49,17 @@ export async function GET(request: Request) {
         categoryId:
           (p.productCategoryId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
         categoryTitle: (p.productCategoryId as { title?: string })?.title ?? "",
-        sellerId: (p.sellerId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
-        sellerName:
-          (p.sellerId as { fullName?: string })?.fullName ||
-          (p.sellerId as { email?: string })?.email ||
-          "Seller",
+        sellerId: seller?._id?.toString?.() ?? "",
+        sellerName: seller?.shopName || seller?.fullName || seller?.email || "Seller",
+        sellerImage: seller?.profileImage ?? "",
         price: p.price,
         inStock: p.inStock,
         deliveryTime: p.deliveryTime,
         totalSold: p.totalSold ?? 0,
         description: p.description ?? "",
         buyerInputs: p.buyerInputs ?? [],
-      })),
+      };
+      }),
     });
   } catch (err) {
     console.error("Products public list error:", err);

@@ -4,9 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const NAV_ITEMS = [
+const BUYER_NAV = [
   { href: "/", label: "Home", icon: "🏠" },
   { href: "/orders", label: "Orders", icon: "📦" },
+  { href: "/profile", label: "Profile", icon: "👤" },
+  { href: "/chat", label: "Chat", icon: "💬" },
+];
+
+const SELLER_NAV = [
+  { href: "/", label: "Home", icon: "🏠" },
+  { href: "/orders", label: "Orders", icon: "📦" },
+  { href: "/seller", label: "Seller", icon: "🏪" },
   { href: "/profile", label: "Profile", icon: "👤" },
   { href: "/chat", label: "Chat", icon: "💬" },
 ];
@@ -30,7 +38,9 @@ export default function BottomNav() {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup");
 
-  if (isHiddenRoute || !role || role !== "buyer") return null;
+  if (isHiddenRoute || !role || role === "admin") return null;
+
+  const navItems = role === "seller" ? SELLER_NAV : BUYER_NAV;
 
   return (
     <nav
@@ -38,14 +48,19 @@ export default function BottomNav() {
       aria-label="Main navigation"
     >
       <div className="flex items-center justify-around px-2 py-2">
-        {NAV_ITEMS.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        {navItems.map((item) => {
+          const active =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-2 text-xs font-medium transition ${
-                active ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                active
+                  ? "text-emerald-400"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <span className="text-lg" aria-hidden>

@@ -193,21 +193,17 @@ export default async function ProfilePage() {
               Go to Admin Panel
             </Link>
           )}
-          {user.role === "seller" && (
-            <Link
-              href="/seller"
-              className="rounded-xl border border-slate-700/60 bg-slate-800/60 py-3 px-4 text-center font-medium text-slate-200 transition hover:bg-slate-800 hover:border-emerald-500/40"
-            >
-              Go to Seller Dashboard
-            </Link>
-          )}
-
-          {canApplyKyc && <KycApplyButton />}
 
           {user.role === "buyer" && kycStatus === "pending" && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 py-3 px-4 text-center text-sm text-amber-400">
               Your seller application is under review. Please wait for admin
               approval.
+            </div>
+          )}
+
+          {canApplyKyc && (
+            <div className="text-center pt-2">
+              <KycApplyButton />
             </div>
           )}
 

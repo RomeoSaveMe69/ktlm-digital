@@ -55,23 +55,23 @@ export default async function HomePage() {
 
     const products = await Product.find({ status: "active", isActive: { $ne: false } })
       .populate("gameId", "title")
-      .populate("sellerId", "fullName email")
+      .populate("sellerId", "fullName email shopName")
       .sort({ createdAt: -1 })
       .limit(20)
       .lean();
-    recentProducts = products.map((p) => ({
-      id: p._id.toString(),
-      title: p.customTitle || p.title,
-      price: p.price,
-      inStock: p.inStock,
-      gameId: (p.gameId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
-      gameTitle: (p.gameId as { title?: string })?.title ?? "—",
-      sellerName:
-        (p.sellerId as { fullName?: string })?.fullName ||
-        (p.sellerId as { email?: string })?.email ||
-        "Seller",
-      totalSold: p.totalSold ?? 0,
-    }));
+    recentProducts = products.map((p) => {
+      const seller = p.sellerId as { fullName?: string; email?: string; shopName?: string } | null;
+      return {
+        id: p._id.toString(),
+        title: p.customTitle || p.title,
+        price: p.price,
+        inStock: p.inStock,
+        gameId: (p.gameId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
+        gameTitle: (p.gameId as { title?: string })?.title ?? "—",
+        sellerName: seller?.shopName || seller?.fullName || seller?.email || "Seller",
+        totalSold: p.totalSold ?? 0,
+      };
+    });
   } catch (e) {
     console.error("Home page load error:", e);
   }
