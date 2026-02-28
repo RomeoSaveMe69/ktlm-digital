@@ -1,10 +1,24 @@
 import { v2 as cloudinary } from "cloudinary";
 
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+let configured = false;
+
+function ensureConfig() {
+  if (configured) return;
+
+  const cloud_name = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const api_key = process.env.CLOUDINARY_API_KEY;
+  const api_secret = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloud_name || !api_key || !api_secret) {
+    throw new Error(
+      `Cloudinary not configured. cloud_name=${cloud_name ? "set" : "MISSING"}, ` +
+        `api_key=${api_key ? "set" : "MISSING"}, api_secret=${api_secret ? "set" : "MISSING"}`,
+    );
+  }
+
+  cloudinary.config({ cloud_name, api_key, api_secret });
+  configured = true;
+}
 
 export type CloudinaryFolder =
   | "deposits"
@@ -21,14 +35,7 @@ export async function uploadImage(
   base64DataUrl: string,
   folder: CloudinaryFolder,
 ): Promise<string> {
-  if (
-    !process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
-    !process.env.CLOUDINARY_API_KEY ||
-    !process.env.CLOUDINARY_API_SECRET
-  ) {
-    throw new Error("Cloudinary credentials are not configured.");
-  }
-
+  ensureConfig();
   const result = await cloudinary.uploader.upload(base64DataUrl, {
     folder: `ktlm/${folder}`,
     resource_type: "image",
@@ -40,6 +47,7 @@ export async function uploadImage(
  * Delete an image from Cloudinary by its URL.
  */
 export async function deleteImage(imageUrl: string): Promise<void> {
+  ensureConfig();
   const publicId = extractPublicId(imageUrl);
   if (publicId) {
     await cloudinary.uploader.destroy(publicId);
@@ -50,6 +58,7 @@ export async function deleteImage(imageUrl: string): Promise<void> {
  * Delete multiple images from Cloudinary.
  */
 export async function deleteImages(imageUrls: string[]): Promise<void> {
+  ensureConfig();
   const ids = imageUrls.map(extractPublicId).filter(Boolean) as string[];
   if (ids.length === 0) return;
   const batchSize = 100;

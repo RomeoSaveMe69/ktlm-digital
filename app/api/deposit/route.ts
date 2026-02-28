@@ -63,8 +63,9 @@ export async function POST(request: Request) {
       try {
         screenshotUrl = await uploadImage(screenshot, "deposits");
       } catch (uploadErr) {
-        console.error("Cloudinary upload failed:", uploadErr);
-        return apiError("Screenshot upload failed. Please try again.", 500);
+        const msg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+        console.error("Cloudinary upload failed:", msg);
+        return apiError(`Screenshot upload failed: ${msg}`, 500);
       }
     }
 

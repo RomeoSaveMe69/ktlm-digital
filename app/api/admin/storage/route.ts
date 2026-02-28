@@ -70,29 +70,70 @@ export async function GET(request: Request) {
       screenshot: { $exists: true, $nin: [null, ""] },
     });
 
-    // ── Section B: Image counts (files are on Cloudinary, not MongoDB) ──
-    const kycCount = await KYC.countDocuments({
-      $or: [
-        { nrcFrontImage: { $exists: true, $nin: [null, ""] } },
-        { nrcBackImage: { $exists: true, $nin: [null, ""] } },
-      ],
-    });
-    const sellerCount = await User.countDocuments({
-      profileImage: { $exists: true, $nin: [null, ""] },
-    });
-    const gameCount = await Game.countDocuments({
-      image: { $exists: true, $nin: [null, ""] },
-    });
-    const prodCatCount = await ProductCategory.countDocuments({
-      image: { $exists: true, $nin: [null, ""] },
-    });
+    // ── Section B: Image counts + MongoDB space used ──
+    // base64 data: URLs stored in MongoDB use space; Cloudinary URLs are tiny strings
+    const kycAgg = await KYC.aggregate([
+      {
+        $match: {
+          $or: [
+            { nrcFrontImage: { $exists: true, $nin: [null, ""] } },
+            { nrcBackImage: { $exists: true, $nin: [null, ""] } },
+          ],
+        },
+      },
+      {
+        $project: {
+          fLen: { $strLenBytes: { $ifNull: ["$nrcFrontImage", ""] } },
+          bLen: { $strLenBytes: { $ifNull: ["$nrcBackImage", ""] } },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: { $add: ["$fLen", "$bLen"] } },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const sellerAgg = await User.aggregate([
+      { $match: { profileImage: { $exists: true, $nin: [null, ""] } } },
+      { $project: { len: { $strLenBytes: "$profileImage" } } },
+      { $group: { _id: null, total: { $sum: "$len" }, count: { $sum: 1 } } },
+    ]);
+
+    const gameAgg = await Game.aggregate([
+      { $match: { image: { $exists: true, $nin: [null, ""] } } },
+      { $project: { len: { $strLenBytes: "$image" } } },
+      { $group: { _id: null, total: { $sum: "$len" }, count: { $sum: 1 } } },
+    ]);
+
+    const prodCatAgg = await ProductCategory.aggregate([
+      { $match: { image: { $exists: true, $nin: [null, ""] } } },
+      { $project: { len: { $strLenBytes: "$image" } } },
+      { $group: { _id: null, total: { $sum: "$len" }, count: { $sum: 1 } } },
+    ]);
+
+    const toMB = (bytes: number) => +(bytes / (1024 * 1024)).toFixed(2);
 
     const storageStats = {
       rechargeReceipts: { count: allReceiptsCount },
-      kyc: { count: kycCount },
-      sellerProfiles: { count: sellerCount },
-      gamePhotos: { count: gameCount },
-      productPhotos: { count: prodCatCount },
+      kyc: {
+        count: kycAgg[0]?.count ?? 0,
+        sizeMB: toMB(kycAgg[0]?.total ?? 0),
+      },
+      sellerProfiles: {
+        count: sellerAgg[0]?.count ?? 0,
+        sizeMB: toMB(sellerAgg[0]?.total ?? 0),
+      },
+      gamePhotos: {
+        count: gameAgg[0]?.count ?? 0,
+        sizeMB: toMB(gameAgg[0]?.total ?? 0),
+      },
+      productPhotos: {
+        count: prodCatAgg[0]?.count ?? 0,
+        sizeMB: toMB(prodCatAgg[0]?.total ?? 0),
+      },
     };
 
     return NextResponse.json({

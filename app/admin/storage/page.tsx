@@ -12,12 +12,14 @@ type DepositItem = {
   createdAt: string;
 };
 
+type StatItem = { count: number; sizeMB?: number };
+
 type StorageStats = {
   rechargeReceipts: { count: number };
-  kyc: { count: number };
-  sellerProfiles: { count: number };
-  gamePhotos: { count: number };
-  productPhotos: { count: number };
+  kyc: StatItem;
+  sellerProfiles: StatItem;
+  gamePhotos: StatItem;
+  productPhotos: StatItem;
 };
 
 export default function AdminStoragePage() {
@@ -119,6 +121,15 @@ export default function AdminStoragePage() {
       stats.sellerProfiles.count +
       stats.gamePhotos.count +
       stats.productPhotos.count
+    : 0;
+
+  const totalDbMB = stats
+    ? +(
+        (stats.kyc.sizeMB ?? 0) +
+        (stats.sellerProfiles.sizeMB ?? 0) +
+        (stats.gamePhotos.sizeMB ?? 0) +
+        (stats.productPhotos.sizeMB ?? 0)
+      ).toFixed(2)
     : 0;
 
   return (
@@ -318,41 +329,49 @@ export default function AdminStoragePage() {
           <>
             {/* Total */}
             <div className="rounded-xl border border-slate-700/60 bg-gradient-to-br from-violet-500/10 to-indigo-500/10 p-5">
-              <p className="text-sm font-medium uppercase tracking-wider text-slate-400">
-                Total Images on Cloudinary
-              </p>
-              <p className="mt-2 text-4xl font-bold text-violet-400">
-                {totalItems}{" "}
-                <span className="text-lg text-slate-400">items</span>
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-wider text-slate-400">
+                    Total Images (excl. receipts)
+                  </p>
+                  <p className="mt-2 text-4xl font-bold text-violet-400">
+                    {totalItems - stats.rechargeReceipts.count}{" "}
+                    <span className="text-lg text-slate-400">items</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium uppercase tracking-wider text-slate-400">
+                    MongoDB Space Used
+                  </p>
+                  <p className="mt-2 text-4xl font-bold text-emerald-400">
+                    {totalDbMB}{" "}
+                    <span className="text-lg text-slate-400">MB</span>
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Breakdown */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  label: "Recharge Receipts",
-                  count: stats.rechargeReceipts.count,
-                  accent: "text-amber-400",
-                },
-                {
                   label: "KYC Applications",
-                  count: stats.kyc.count,
+                  ...stats.kyc,
                   accent: "text-emerald-400",
                 },
                 {
                   label: "Seller Profiles",
-                  count: stats.sellerProfiles.count,
+                  ...stats.sellerProfiles,
                   accent: "text-blue-400",
                 },
                 {
                   label: "Game Photos",
-                  count: stats.gamePhotos.count,
+                  ...stats.gamePhotos,
                   accent: "text-violet-400",
                 },
                 {
                   label: "Product Photos",
-                  count: stats.productPhotos.count,
+                  ...stats.productPhotos,
                   accent: "text-pink-400",
                 },
               ].map((s) => (
@@ -363,10 +382,15 @@ export default function AdminStoragePage() {
                   <p className="text-xs text-slate-500">{s.label}</p>
                   <p className={`mt-1 text-2xl font-bold ${s.accent}`}>
                     {s.count}
+                    <span className="ml-1 text-sm text-slate-500">
+                      item{s.count !== 1 ? "s" : ""}
+                    </span>
                   </p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    item{s.count !== 1 ? "s" : ""}
-                  </p>
+                  {(s.sizeMB ?? 0) > 0 && (
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {s.sizeMB} MB in DB
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
