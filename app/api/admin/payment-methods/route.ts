@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { PaymentMethod } from "@/lib/models/PaymentMethod";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -68,21 +69,23 @@ export async function POST(request: Request) {
       data.accountNumber = accountNumber;
     } else {
       const shopName = String(body.shopName ?? "").trim();
-      const qrImage = String(body.qrImage ?? "").trim();
+      const qrImageRaw = String(body.qrImage ?? "").trim();
       if (!shopName) {
         return NextResponse.json(
           { error: "Shop name is required." },
           { status: 400 },
         );
       }
-      if (!qrImage) {
+      if (!qrImageRaw) {
         return NextResponse.json(
           { error: "QR image is required." },
           { status: 400 },
         );
       }
       data.shopName = shopName;
-      data.qrImage = qrImage;
+      data.qrImage = qrImageRaw.startsWith("data:")
+        ? await uploadImage(qrImageRaw, "games")
+        : qrImageRaw;
     }
 
     const method = await PaymentMethod.create(data);

@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { Game } from "@/lib/models/Game";
 import { ProductCategory } from "@/lib/models/ProductCategory";
 import { Product } from "@/lib/models/Product";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 /** GET /api/admin/games/[id] */
@@ -61,7 +62,11 @@ export async function PUT(
     if (typeof body.title === "string") updates.title = body.title.trim();
     if (typeof body.description === "string")
       updates.description = body.description.trim();
-    if (typeof body.image === "string") updates.image = body.image;
+    if (typeof body.image === "string" && body.image) {
+      updates.image = body.image.startsWith("data:")
+        ? await uploadImage(body.image, "games")
+        : body.image;
+    }
     const game = await Game.findByIdAndUpdate(
       id,
       { $set: updates },

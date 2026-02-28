@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
 import { KYC } from "@/lib/models/KYC";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -50,12 +51,17 @@ export async function POST(request: Request) {
       return apiError("Your KYC is already approved.", 400);
     }
 
+    const [frontUrl, backUrl] = await Promise.all([
+      uploadImage(nrcFrontImage, "kyc"),
+      uploadImage(nrcBackImage, "kyc"),
+    ]);
+
     await KYC.create({
       userId: new mongoose.Types.ObjectId(session.userId),
       realName,
       nrcNumber,
-      nrcFrontImage,
-      nrcBackImage,
+      nrcFrontImage: frontUrl,
+      nrcBackImage: backUrl,
       reason,
       status: "pending",
     });

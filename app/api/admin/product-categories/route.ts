@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { ProductCategory } from "@/lib/models/ProductCategory";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 /** GET /api/admin/product-categories?gameId= – list all or by gameId. */
@@ -60,7 +61,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const image = typeof body.image === "string" ? body.image.trim() : "";
+    let image = typeof body.image === "string" ? body.image.trim() : "";
+    if (image && image.startsWith("data:")) {
+      image = await uploadImage(image, "categories");
+    }
     const doc = await ProductCategory.create({
       gameId: new mongoose.Types.ObjectId(gameId),
       title,

@@ -6,6 +6,7 @@ import { KYC } from "@/lib/models/KYC";
 import { User } from "@/lib/models/User";
 import { Game } from "@/lib/models/Game";
 import { ProductCategory } from "@/lib/models/ProductCategory";
+import { deleteImage } from "@/lib/cloudinary";
 import { apiError, normalizeErrorMessage } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -55,128 +56,43 @@ export async function GET(request: Request) {
       .limit(limit)
       .lean();
 
-    let receiptBytes = 0;
-    const items = deposits.map((d) => {
-      const len = d.screenshot?.length ?? 0;
-      receiptBytes += len;
-      return {
-        _id: d._id.toString(),
-        userEmail: (d.userId as { email?: string })?.email ?? "Unknown",
-        userName: (d.userId as { fullName?: string })?.fullName ?? "",
-        amount: d.amount,
-        status: d.status,
-        screenshotSizeKB: +(len / 1024).toFixed(1),
-        transactionId: d.transactionId,
-        createdAt: d.createdAt,
-      };
+    const items = deposits.map((d) => ({
+      _id: d._id.toString(),
+      userEmail: (d.userId as { email?: string })?.email ?? "Unknown",
+      userName: (d.userId as { fullName?: string })?.fullName ?? "",
+      amount: d.amount,
+      status: d.status,
+      transactionId: d.transactionId,
+      createdAt: d.createdAt,
+    }));
+
+    const allReceiptsCount = await DepositRequest.countDocuments({
+      screenshot: { $exists: true, $nin: [null, ""] },
     });
 
-    // Total receipts size (all, not just current page)
-    const allReceiptsAgg = await DepositRequest.aggregate([
-      {
-        $match: {
-          screenshot: { $exists: true, $nin: [null, ""] },
-        },
-      },
-      {
-        $project: { len: { $strLenBytes: "$screenshot" } },
-      },
-      {
-        $group: { _id: null, total: { $sum: "$len" }, count: { $sum: 1 } },
-      },
-    ]);
-    const allReceiptsMB = +((allReceiptsAgg[0]?.total ?? 0) / (1024 * 1024)).toFixed(2);
-    const allReceiptsCount = allReceiptsAgg[0]?.count ?? 0;
-
-    // ── Section B: Storage usage stats (no images returned) ──
-
-    // KYC images
-    const kycAgg = await KYC.aggregate([
-      {
-        $project: {
-          frontLen: {
-            $cond: [{ $gt: [{ $strLenBytes: { $ifNull: ["$nrcFrontImage", ""] } }, 0] }, { $strLenBytes: "$nrcFrontImage" }, 0],
-          },
-          backLen: {
-            $cond: [{ $gt: [{ $strLenBytes: { $ifNull: ["$nrcBackImage", ""] } }, 0] }, { $strLenBytes: "$nrcBackImage" }, 0],
-          },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: { $add: ["$frontLen", "$backLen"] } },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    // Seller profile images
-    const sellerAgg = await User.aggregate([
-      {
-        $match: {
-          profileImage: { $exists: true, $nin: [null, ""] },
-        },
-      },
-      {
-        $project: { len: { $strLenBytes: "$profileImage" } },
-      },
-      {
-        $group: { _id: null, total: { $sum: "$len" }, count: { $sum: 1 } },
-      },
-    ]);
-
-    // Game images
-    const gameAgg = await Game.aggregate([
-      {
-        $match: {
-          image: { $exists: true, $nin: [null, ""] },
-        },
-      },
-      {
-        $project: { len: { $strLenBytes: "$image" } },
-      },
-      {
-        $group: { _id: null, total: { $sum: "$len" }, count: { $sum: 1 } },
-      },
-    ]);
-
-    // Product category images
-    const prodCatAgg = await ProductCategory.aggregate([
-      {
-        $match: {
-          image: { $exists: true, $nin: [null, ""] },
-        },
-      },
-      {
-        $project: { len: { $strLenBytes: "$image" } },
-      },
-      {
-        $group: { _id: null, total: { $sum: "$len" }, count: { $sum: 1 } },
-      },
-    ]);
+    // ── Section B: Image counts (files are on Cloudinary, not MongoDB) ──
+    const kycCount = await KYC.countDocuments({
+      $or: [
+        { nrcFrontImage: { $exists: true, $nin: [null, ""] } },
+        { nrcBackImage: { $exists: true, $nin: [null, ""] } },
+      ],
+    });
+    const sellerCount = await User.countDocuments({
+      profileImage: { $exists: true, $nin: [null, ""] },
+    });
+    const gameCount = await Game.countDocuments({
+      image: { $exists: true, $nin: [null, ""] },
+    });
+    const prodCatCount = await ProductCategory.countDocuments({
+      image: { $exists: true, $nin: [null, ""] },
+    });
 
     const storageStats = {
-      rechargeReceipts: {
-        count: allReceiptsCount,
-        sizeMB: allReceiptsMB,
-      },
-      kyc: {
-        count: kycAgg[0]?.count ?? 0,
-        sizeMB: +((kycAgg[0]?.total ?? 0) / (1024 * 1024)).toFixed(2),
-      },
-      sellerProfiles: {
-        count: sellerAgg[0]?.count ?? 0,
-        sizeMB: +((sellerAgg[0]?.total ?? 0) / (1024 * 1024)).toFixed(2),
-      },
-      gamePhotos: {
-        count: gameAgg[0]?.count ?? 0,
-        sizeMB: +((gameAgg[0]?.total ?? 0) / (1024 * 1024)).toFixed(2),
-      },
-      productPhotos: {
-        count: prodCatAgg[0]?.count ?? 0,
-        sizeMB: +((prodCatAgg[0]?.total ?? 0) / (1024 * 1024)).toFixed(2),
-      },
+      rechargeReceipts: { count: allReceiptsCount },
+      kyc: { count: kycCount },
+      sellerProfiles: { count: sellerCount },
+      gamePhotos: { count: gameCount },
+      productPhotos: { count: prodCatCount },
     };
 
     return NextResponse.json({
@@ -213,6 +129,9 @@ export async function DELETE(request: Request) {
       return apiError("Cannot clear screenshot of pending deposit", 400);
     }
 
+    if (deposit.screenshot?.includes("cloudinary.com")) {
+      await deleteImage(deposit.screenshot).catch(() => {});
+    }
     deposit.screenshot = "";
     await deposit.save();
 

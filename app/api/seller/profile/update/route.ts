@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -55,11 +56,15 @@ export async function PATCH(request: Request) {
     if (typeof body.shopDescription === "string") {
       updates.shopDescription = body.shopDescription.trim();
     }
-    if (typeof body.profileImage === "string") {
-      if (body.profileImage.length > MAX_IMAGE_BYTES) {
-        return apiError("Profile image must be under 500 KB.", 400);
+    if (typeof body.profileImage === "string" && body.profileImage) {
+      if (body.profileImage.startsWith("data:")) {
+        if (body.profileImage.length > MAX_IMAGE_BYTES) {
+          return apiError("Profile image must be under 500 KB.", 400);
+        }
+        updates.profileImage = await uploadImage(body.profileImage, "profiles");
+      } else {
+        updates.profileImage = body.profileImage;
       }
-      updates.profileImage = body.profileImage;
     }
 
     if (Object.keys(updates).length === 0) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { Game } from "@/lib/models/Game";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 /** GET /api/admin/games – list all games (admin). */
@@ -42,7 +43,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
     const description = typeof body.description === "string" ? body.description.trim() : "";
-    const image = typeof body.image === "string" ? body.image : undefined;
+    let image: string | undefined;
+    if (typeof body.image === "string" && body.image) {
+      image = body.image.startsWith("data:")
+        ? await uploadImage(body.image, "games")
+        : body.image;
+    }
     const doc = await Game.create({ title, description: description || undefined, image });
     return NextResponse.json({
       game: {

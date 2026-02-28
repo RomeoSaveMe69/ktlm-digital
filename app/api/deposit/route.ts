@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { DepositRequest } from "@/lib/models/DepositRequest";
 import { PaymentMethod } from "@/lib/models/PaymentMethod";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -57,12 +58,17 @@ export async function POST(request: Request) {
       );
     }
 
+    let screenshotUrl: string | undefined;
+    if (screenshot) {
+      screenshotUrl = await uploadImage(screenshot, "deposits");
+    }
+
     const deposit = await DepositRequest.create({
       userId: new mongoose.Types.ObjectId(String(session.userId)),
       amount,
       paymentMethodId: new mongoose.Types.ObjectId(paymentMethodId),
       transactionId,
-      screenshot,
+      screenshot: screenshotUrl,
       status: "pending",
     });
 

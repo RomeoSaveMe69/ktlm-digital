@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { ProductCategory } from "@/lib/models/ProductCategory";
 import { Product } from "@/lib/models/Product";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 /** PUT /api/admin/product-categories/[id] – update title. */
@@ -28,8 +29,10 @@ export async function PUT(
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
     const updates: Record<string, string> = { title };
-    if (typeof body.image === "string") {
-      updates.image = body.image.trim();
+    if (typeof body.image === "string" && body.image) {
+      updates.image = body.image.startsWith("data:")
+        ? await uploadImage(body.image.trim(), "categories")
+        : body.image.trim();
     }
     const cat = await ProductCategory.findByIdAndUpdate(
       id,

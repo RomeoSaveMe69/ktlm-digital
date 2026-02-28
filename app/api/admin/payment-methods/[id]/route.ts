@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { PaymentMethod } from "@/lib/models/PaymentMethod";
+import { uploadImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,12 @@ export async function PUT(
     if (body.accountName != null) update.accountName = String(body.accountName).trim();
     if (body.accountNumber != null) update.accountNumber = String(body.accountNumber).trim();
     if (body.shopName != null) update.shopName = String(body.shopName).trim();
-    if (body.qrImage != null) update.qrImage = String(body.qrImage);
+    if (body.qrImage != null) {
+      const qr = String(body.qrImage);
+      update.qrImage = qr.startsWith("data:")
+        ? await uploadImage(qr, "games")
+        : qr;
+    }
     if (typeof body.isActive === "boolean") update.isActive = body.isActive;
 
     const method = await PaymentMethod.findByIdAndUpdate(id, update, { new: true });

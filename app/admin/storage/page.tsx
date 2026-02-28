@@ -8,17 +8,16 @@ type DepositItem = {
   userName: string;
   amount: number;
   status: string;
-  screenshotSizeKB: number;
   transactionId: string;
   createdAt: string;
 };
 
 type StorageStats = {
-  rechargeReceipts: { count: number; sizeMB: number };
-  kyc: { count: number; sizeMB: number };
-  sellerProfiles: { count: number; sizeMB: number };
-  gamePhotos: { count: number; sizeMB: number };
-  productPhotos: { count: number; sizeMB: number };
+  rechargeReceipts: { count: number };
+  kyc: { count: number };
+  sellerProfiles: { count: number };
+  gamePhotos: { count: number };
+  productPhotos: { count: number };
 };
 
 export default function AdminStoragePage() {
@@ -114,14 +113,12 @@ export default function AdminStoragePage() {
     }
   };
 
-  const totalStorageMB = stats
-    ? +(
-        stats.rechargeReceipts.sizeMB +
-        stats.kyc.sizeMB +
-        stats.sellerProfiles.sizeMB +
-        stats.gamePhotos.sizeMB +
-        stats.productPhotos.sizeMB
-      ).toFixed(2)
+  const totalItems = stats
+    ? stats.rechargeReceipts.count +
+      stats.kyc.count +
+      stats.sellerProfiles.count +
+      stats.gamePhotos.count +
+      stats.productPhotos.count
     : 0;
 
   return (
@@ -224,7 +221,6 @@ export default function AdminStoragePage() {
                     <th className="px-4 py-3">Amount</th>
                     <th className="px-4 py-3">Txn ID</th>
                     <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Size</th>
                     <th className="px-4 py-3">Date</th>
                     <th className="px-4 py-3 text-right">Action</th>
                   </tr>
@@ -258,9 +254,6 @@ export default function AdminStoragePage() {
                         >
                           {item.status}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-300">
-                        {item.screenshotSizeKB} KB
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-400">
                         {new Date(item.createdAt).toLocaleDateString()}
@@ -317,8 +310,8 @@ export default function AdminStoragePage() {
           KYC & Photo Storage Usage
         </h3>
         <p className="text-xs text-slate-500">
-          Estimated database storage used by images. No photos are displayed
-          here.
+          Image files are stored on Cloudinary. Below shows item counts per
+          category.
         </p>
 
         {stats ? (
@@ -326,11 +319,11 @@ export default function AdminStoragePage() {
             {/* Total */}
             <div className="rounded-xl border border-slate-700/60 bg-gradient-to-br from-violet-500/10 to-indigo-500/10 p-5">
               <p className="text-sm font-medium uppercase tracking-wider text-slate-400">
-                Total Estimated Image Storage
+                Total Images on Cloudinary
               </p>
               <p className="mt-2 text-4xl font-bold text-violet-400">
-                {totalStorageMB}{" "}
-                <span className="text-lg text-slate-400">MB</span>
+                {totalItems}{" "}
+                <span className="text-lg text-slate-400">items</span>
               </p>
             </div>
 
@@ -339,27 +332,27 @@ export default function AdminStoragePage() {
               {[
                 {
                   label: "Recharge Receipts",
-                  ...stats.rechargeReceipts,
+                  count: stats.rechargeReceipts.count,
                   accent: "text-amber-400",
                 },
                 {
                   label: "KYC Applications",
-                  ...stats.kyc,
+                  count: stats.kyc.count,
                   accent: "text-emerald-400",
                 },
                 {
                   label: "Seller Profiles",
-                  ...stats.sellerProfiles,
+                  count: stats.sellerProfiles.count,
                   accent: "text-blue-400",
                 },
                 {
                   label: "Game Photos",
-                  ...stats.gamePhotos,
+                  count: stats.gamePhotos.count,
                   accent: "text-violet-400",
                 },
                 {
                   label: "Product Photos",
-                  ...stats.productPhotos,
+                  count: stats.productPhotos.count,
                   accent: "text-pink-400",
                 },
               ].map((s) => (
@@ -369,11 +362,10 @@ export default function AdminStoragePage() {
                 >
                   <p className="text-xs text-slate-500">{s.label}</p>
                   <p className={`mt-1 text-2xl font-bold ${s.accent}`}>
-                    {s.sizeMB}{" "}
-                    <span className="text-sm text-slate-500">MB</span>
+                    {s.count}
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {s.count} item{s.count !== 1 ? "s" : ""}
+                    item{s.count !== 1 ? "s" : ""}
                   </p>
                 </div>
               ))}
