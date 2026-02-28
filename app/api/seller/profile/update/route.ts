@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage, deleteImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +72,16 @@ export async function PATCH(request: Request) {
     }
 
     await connectDB();
+
+    if (updates.profileImage) {
+      const existing = await User.findById(session.userId).select("profileImage").lean();
+      if (existing?.profileImage && existing.profileImage !== updates.profileImage) {
+        deleteImage(existing.profileImage).catch((e) =>
+          console.error("Failed to delete old profile image:", e),
+        );
+      }
+    }
+
     const user = await User.findByIdAndUpdate(
       session.userId,
       { $set: updates },

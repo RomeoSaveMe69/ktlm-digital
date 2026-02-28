@@ -5,7 +5,7 @@ import { connectDB } from "@/lib/db";
 import { Game } from "@/lib/models/Game";
 import { ProductCategory } from "@/lib/models/ProductCategory";
 import { Product } from "@/lib/models/Product";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage, deleteImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 /** GET /api/admin/games/[id] */
@@ -57,6 +57,10 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
     await connectDB();
+    const existingGame = await Game.findById(id).lean();
+    if (!existingGame) {
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
+    }
     const body = await request.json();
     const updates: { title?: string; description?: string; image?: string } = {};
     if (typeof body.title === "string") updates.title = body.title.trim();
@@ -66,6 +70,11 @@ export async function PUT(
       updates.image = body.image.startsWith("data:")
         ? await uploadImage(body.image, "games")
         : body.image;
+      if (existingGame.image && updates.image !== existingGame.image) {
+        deleteImage(existingGame.image).catch((e) =>
+          console.error("Failed to delete old game image:", e),
+        );
+      }
     }
     const game = await Game.findByIdAndUpdate(
       id,

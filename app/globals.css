@@ -1,22 +1,57 @@
 @import "tailwindcss";
 
+/*
+ * ==========================================================
+ *  THEME VARIABLES
+ *  Change hex codes here to reskin the entire app
+ *  (e.g. for "Happy New Year", "Thingyan", seasonal events).
+ * ==========================================================
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core surfaces */
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --surface: #0f172a;
+  --surface-light: #1e293b;
+
+  /* Primary accent (buttons, links, active states) */
+  --primary: #10b981;
+  --primary-light: #34d399;
+  --primary-dark: #059669;
+
+  /* Secondary accent (badges, highlights) */
+  --secondary: #a78bfa;
+  --secondary-light: #c4b5fd;
+  --secondary-dark: #7c3aed;
+
+  /* Borders & muted text */
+  --border: #334155;
+  --muted: #94a3b8;
+
+  /* Status colors */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-light: var(--surface-light);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-secondary-light: var(--secondary-light);
+  --color-secondary-dark: var(--secondary-dark);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { ProductCategory } from "@/lib/models/ProductCategory";
 import { Product } from "@/lib/models/Product";
-import { uploadImage } from "@/lib/cloudinary";
+import { uploadImage, deleteImage } from "@/lib/cloudinary";
 import { apiError } from "@/lib/api-utils";
 
 /** PUT /api/admin/product-categories/[id] – update title. */
@@ -22,6 +22,13 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
     await connectDB();
+    const existingCat = await ProductCategory.findById(id).lean();
+    if (!existingCat) {
+      return NextResponse.json(
+        { error: "Category not found" },
+        { status: 404 }
+      );
+    }
     const body = await request.json();
     const title =
       typeof body.title === "string" ? body.title.trim() : "";
@@ -33,6 +40,11 @@ export async function PUT(
       updates.image = body.image.startsWith("data:")
         ? await uploadImage(body.image.trim(), "categories")
         : body.image.trim();
+      if (existingCat.image && updates.image !== existingCat.image) {
+        deleteImage(existingCat.image).catch((e) =>
+          console.error("Failed to delete old category image:", e),
+        );
+      }
     }
     const cat = await ProductCategory.findByIdAndUpdate(
       id,

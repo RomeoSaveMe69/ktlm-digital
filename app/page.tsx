@@ -5,6 +5,7 @@ import { Product } from "@/lib/models/Product";
 import { User } from "@/lib/models/User";
 import { Game } from "@/lib/models/Game";
 import { Cart } from "@/lib/models/Cart";
+import HeroSearch from "./_components/HeroSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -145,18 +146,7 @@ export default async function HomePage() {
           <p className="mb-4 text-sm text-slate-500">
             Search by game name or item (diamonds, UC, top-up…)
           </p>
-          <div className="mx-auto max-w-xl">
-            <label htmlFor="hero-search" className="sr-only">Search games or items</label>
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden>🔍</span>
-              <input
-                id="hero-search"
-                type="search"
-                placeholder="e.g. MLBB, 100 Diamonds, PUBG UC..."
-                className="w-full rounded-2xl border border-slate-700/80 bg-slate-800/80 py-4 pl-12 pr-4 text-slate-100 placeholder-slate-500 focus:border-emerald-500/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-          </div>
+          <HeroSearch />
         </section>
 
         {/* Popular Games with images */}
