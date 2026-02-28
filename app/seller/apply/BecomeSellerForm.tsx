@@ -9,6 +9,7 @@ export function BecomeSellerForm() {
   const router = useRouter();
   const [realName, setRealName] = useState("");
   const [nrcNumber, setNrcNumber] = useState("");
+  const [reason, setReason] = useState("");
   const [nrcFrontPreview, setNrcFrontPreview] = useState<string | null>(null);
   const [nrcBackPreview, setNrcBackPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,6 +60,7 @@ export function BecomeSellerForm() {
           nrcNumber: nrcNumber.trim(),
           nrcFrontImage: nrcFrontPreview,
           nrcBackImage: nrcBackPreview,
+          reason: reason.trim(),
         }),
       });
       const data = await res.json();
@@ -125,6 +127,19 @@ export function BecomeSellerForm() {
           onChange={(e) => setNrcNumber(e.target.value)}
           placeholder="e.g. 12/TaMaNa(N)123456"
           className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          Why do you want to become a seller?
+        </label>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Tell us why you want to be a seller, what products you plan to sell, your experience, etc."
+          rows={3}
+          className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
         />
       </div>
 

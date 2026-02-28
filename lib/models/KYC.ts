@@ -9,6 +9,7 @@ export interface IKYC {
   nrcNumber: string;
   nrcFrontImage: string;
   nrcBackImage: string;
+  reason: string;
   status: KycDocStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +27,7 @@ const kycSchema = new Schema<IKYC>(
     nrcNumber: { type: String, required: true, trim: true },
     nrcFrontImage: { type: String, required: true },
     nrcBackImage: { type: String, required: true },
+    reason: { type: String, trim: true, default: "" },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],

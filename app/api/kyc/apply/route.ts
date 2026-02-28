@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const nrcNumber = String(body.nrcNumber ?? "").trim();
     const nrcFrontImage = String(body.nrcFrontImage ?? "").trim();
     const nrcBackImage = String(body.nrcBackImage ?? "").trim();
+    const reason = String(body.reason ?? "").trim();
 
     if (!realName || !nrcNumber || !nrcFrontImage || !nrcBackImage) {
       return apiError("All fields are required: realName, nrcNumber, nrcFrontImage, nrcBackImage.", 400);
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
       nrcNumber,
       nrcFrontImage,
       nrcBackImage,
+      reason,
       status: "pending",
     });
 

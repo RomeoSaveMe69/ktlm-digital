@@ -44,6 +44,7 @@ export async function GET() {
           nrcNumber: app.nrcNumber,
           nrcFrontImage: app.nrcFrontImage,
           nrcBackImage: app.nrcBackImage,
+          reason: app.reason ?? "",
           status: app.status,
           createdAt: app.createdAt,
         };

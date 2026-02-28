@@ -14,6 +14,7 @@ type KycApp = {
   nrcNumber: string;
   nrcFrontImage: string;
   nrcBackImage: string;
+  reason: string;
   status: string;
   createdAt: string;
 };
@@ -215,6 +216,18 @@ export default function AdminKycPage() {
                   </dd>
                 </div>
               </dl>
+
+              {/* Reason / Description */}
+              {app.reason && (
+                <div className="rounded-lg border border-slate-700/40 bg-slate-900/50 p-3">
+                  <p className="text-xs font-medium text-slate-500 mb-1">
+                    Reason / What they plan to sell
+                  </p>
+                  <p className="text-sm text-slate-300 whitespace-pre-wrap">
+                    {app.reason}
+                  </p>
+                </div>
+              )}
 
               {/* NRC Images */}
               <div className="grid grid-cols-2 gap-3">
