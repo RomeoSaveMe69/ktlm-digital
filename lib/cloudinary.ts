@@ -21,17 +21,23 @@ export async function uploadImage(
   base64DataUrl: string,
   folder: CloudinaryFolder,
 ): Promise<string> {
+  if (
+    !process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY ||
+    !process.env.CLOUDINARY_API_SECRET
+  ) {
+    throw new Error("Cloudinary credentials are not configured.");
+  }
+
   const result = await cloudinary.uploader.upload(base64DataUrl, {
     folder: `ktlm/${folder}`,
     resource_type: "image",
-    transformation: [{ quality: "auto", fetch_format: "auto" }],
   });
   return result.secure_url;
 }
 
 /**
  * Delete an image from Cloudinary by its URL.
- * Extracts the public_id from the URL and destroys it.
  */
 export async function deleteImage(imageUrl: string): Promise<void> {
   const publicId = extractPublicId(imageUrl);

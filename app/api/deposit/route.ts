@@ -60,7 +60,12 @@ export async function POST(request: Request) {
 
     let screenshotUrl: string | undefined;
     if (screenshot) {
-      screenshotUrl = await uploadImage(screenshot, "deposits");
+      try {
+        screenshotUrl = await uploadImage(screenshot, "deposits");
+      } catch (uploadErr) {
+        console.error("Cloudinary upload failed:", uploadErr);
+        return apiError("Screenshot upload failed. Please try again.", 500);
+      }
     }
 
     const deposit = await DepositRequest.create({

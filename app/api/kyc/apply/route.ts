@@ -51,10 +51,17 @@ export async function POST(request: Request) {
       return apiError("Your KYC is already approved.", 400);
     }
 
-    const [frontUrl, backUrl] = await Promise.all([
-      uploadImage(nrcFrontImage, "kyc"),
-      uploadImage(nrcBackImage, "kyc"),
-    ]);
+    let frontUrl: string;
+    let backUrl: string;
+    try {
+      [frontUrl, backUrl] = await Promise.all([
+        uploadImage(nrcFrontImage, "kyc"),
+        uploadImage(nrcBackImage, "kyc"),
+      ]);
+    } catch (uploadErr) {
+      console.error("Cloudinary KYC upload failed:", uploadErr);
+      return apiError("Image upload failed. Please try again.", 500);
+    }
 
     await KYC.create({
       userId: new mongoose.Types.ObjectId(session.userId),
