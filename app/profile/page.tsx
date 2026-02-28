@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
+import { KYC } from "@/lib/models/KYC";
 import { ProfileSignOut } from "./ProfileSignOut";
 import { KycApplyButton } from "./KycApplyButton";
 import { OrderHistory } from "./OrderHistory";
@@ -19,7 +20,18 @@ export default async function ProfilePage() {
     .lean();
   if (!user) redirect("/login");
 
-  const kycStatus = user.kycStatus ?? "none";
+  let kycStatus = user.kycStatus ?? "none";
+
+  // Auto-fix: old users have kycStatus "pending" from the previous default
+  // but never actually submitted a KYC application. Reset them to "none".
+  if (kycStatus === "pending" && user.role === "buyer") {
+    const hasKycDoc = await KYC.exists({ userId: user._id });
+    if (!hasKycDoc) {
+      await User.findByIdAndUpdate(user._id, { $set: { kycStatus: "none" } });
+      kycStatus = "none";
+    }
+  }
+
   const canApplyKyc =
     user.role === "buyer" && (kycStatus === "none" || kycStatus === "rejected");
 

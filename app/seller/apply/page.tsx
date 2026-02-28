@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
+import { KYC } from "@/lib/models/KYC";
 import { BecomeSellerForm } from "./BecomeSellerForm";
 
 export default async function SellerApplyPage() {
@@ -16,7 +17,16 @@ export default async function SellerApplyPage() {
   if (!user) redirect("/login");
   if (user.role === "seller" || user.role === "admin") redirect("/seller");
 
-  const kycStatus = user.kycStatus ?? "none";
+  let kycStatus = user.kycStatus ?? "none";
+
+  // Auto-fix stale "pending" from old default when no KYC doc exists
+  if (kycStatus === "pending") {
+    const hasKycDoc = await KYC.exists({ userId: user._id });
+    if (!hasKycDoc) {
+      await User.findByIdAndUpdate(user._id, { $set: { kycStatus: "none" } });
+      kycStatus = "none";
+    }
+  }
 
   if (kycStatus === "pending") {
     return (
