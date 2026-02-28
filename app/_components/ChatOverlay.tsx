@@ -186,7 +186,7 @@ export default function ChatOverlay() {
           setMinimized(false);
           setOpen(true);
         }}
-        className="fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-500/30 transition hover:scale-105 hover:bg-emerald-500"
+        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-500/30 transition hover:scale-105 hover:bg-emerald-500"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -220,7 +220,7 @@ export default function ChatOverlay() {
           setOpen(true);
           setView("list");
         }}
-        className="fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-500/30 transition hover:scale-105 hover:bg-emerald-500"
+        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-500/30 transition hover:scale-105 hover:bg-emerald-500"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -247,7 +247,7 @@ export default function ChatOverlay() {
 
   // Open chat overlay
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex w-[360px] flex-col overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl shadow-black/40">
+    <div className="fixed bottom-20 right-4 z-50 flex w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-900 shadow-2xl shadow-black/40">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-700/80 bg-gradient-to-r from-emerald-600 to-emerald-700 px-4 py-3">
         <div className="flex items-center gap-2">

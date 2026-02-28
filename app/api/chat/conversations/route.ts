@@ -75,8 +75,13 @@ export async function GET(request: NextRequest) {
         $project: {
           partnerId: { $toString: "$_id" },
           partnerName: {
-            $ifNull: ["$partner.fullName", "$partner.email"],
+            $ifNull: [
+              "$partner.shopName",
+              "$partner.fullName",
+              "$partner.email",
+            ],
           },
+          partnerShopName: { $ifNull: ["$partner.shopName", ""] },
           partnerEmail: "$partner.email",
           partnerRole: "$partner.role",
           lastMessage: 1,

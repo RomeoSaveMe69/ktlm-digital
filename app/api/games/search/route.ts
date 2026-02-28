@@ -22,9 +22,9 @@ export async function GET(request: Request) {
 
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    const games = await Game.find({
-      title: { $regex: escaped, $options: "i" },
-    })
+    const games = await Game.find(
+      { title: { $regex: escaped, $options: "i" } },
+    )
       .sort({ title: 1 })
       .limit(10)
       .lean();

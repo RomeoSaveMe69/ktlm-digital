@@ -33,22 +33,25 @@ export async function GET(request: NextRequest) {
         ],
       })
         .sort({ createdAt: 1 })
-        .populate("senderId", "fullName email role")
-        .populate("receiverId", "fullName email role")
+        .populate("senderId", "fullName email role shopName")
+        .populate("receiverId", "fullName email role shopName")
         .lean();
 
+      type PopulatedUser = { _id: { toString(): string }; shopName?: string; fullName?: string; email?: string; role?: string };
       const formatted = messages.map((m) => ({
         _id: m._id.toString(),
-        senderId: (m.senderId as { _id: { toString(): string } })._id.toString(),
+        senderId: (m.senderId as PopulatedUser)._id.toString(),
         senderName:
-          (m.senderId as { fullName?: string })?.fullName ||
-          (m.senderId as { email?: string })?.email ||
+          (m.senderId as PopulatedUser)?.shopName ||
+          (m.senderId as PopulatedUser)?.fullName ||
+          (m.senderId as PopulatedUser)?.email ||
           "Unknown",
-        senderRole: (m.senderId as { role?: string })?.role ?? "",
-        receiverId: (m.receiverId as { _id: { toString(): string } })._id.toString(),
+        senderRole: (m.senderId as PopulatedUser)?.role ?? "",
+        receiverId: (m.receiverId as PopulatedUser)._id.toString(),
         receiverName:
-          (m.receiverId as { fullName?: string })?.fullName ||
-          (m.receiverId as { email?: string })?.email ||
+          (m.receiverId as PopulatedUser)?.shopName ||
+          (m.receiverId as PopulatedUser)?.fullName ||
+          (m.receiverId as PopulatedUser)?.email ||
           "Unknown",
         text: m.text,
         isRead: m.isRead,
@@ -105,13 +108,13 @@ export async function GET(request: NextRequest) {
         $project: {
           participantAId: { $toString: "$participantA" },
           participantAName: {
-            $ifNull: ["$userA.fullName", "$userA.email"],
+            $ifNull: ["$userA.shopName", "$userA.fullName", "$userA.email"],
           },
           participantAEmail: "$userA.email",
           participantARole: "$userA.role",
           participantBId: { $toString: "$participantB" },
           participantBName: {
-            $ifNull: ["$userB.fullName", "$userB.email"],
+            $ifNull: ["$userB.shopName", "$userB.fullName", "$userB.email"],
           },
           participantBEmail: "$userB.email",
           participantBRole: "$userB.role",
