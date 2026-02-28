@@ -47,6 +47,7 @@ export default function ProductDetailPage() {
   const [cartSuccess, setCartSuccess] = useState(false);
 
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
   const loadProduct = useCallback(async () => {
     if (!productId) return;
@@ -249,26 +250,39 @@ export default function ProductDetailPage() {
           {reviews.length === 0 ? (
             <p className="p-5 text-sm text-slate-500">No reviews yet.</p>
           ) : (
-            <div className="divide-y divide-slate-700/40">
-              {reviews.map((r) => (
-                <div key={r.id} className="px-5 py-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">
-                      {r.buyerName.charAt(0).toUpperCase()}
+            <>
+              <div className={showAllReviews ? "max-h-80 overflow-y-auto divide-y divide-slate-700/40" : "divide-y divide-slate-700/40"}>
+                {(showAllReviews ? reviews : reviews.slice(0, 3)).map((r) => (
+                  <div key={r.id} className="px-5 py-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">
+                        {r.buyerName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm font-medium text-slate-200">{r.buyerName}</span>
+                      <span className="text-amber-400 text-sm tracking-tight">{stars(r.rating)}</span>
                     </div>
-                    <span className="text-sm font-medium text-slate-200">{r.buyerName}</span>
-                    <span className="text-amber-400 text-sm tracking-tight">{stars(r.rating)}</span>
+                    <p className="text-sm text-slate-300 pl-9">{r.text}</p>
+                    {r.reply && (
+                      <div className="ml-9 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                        <p className="text-xs text-emerald-400 mb-0.5">Seller Reply</p>
+                        <p className="text-sm text-slate-300">{r.reply}</p>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-slate-300 pl-9">{r.text}</p>
-                  {r.reply && (
-                    <div className="ml-9 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-                      <p className="text-xs text-emerald-400 mb-0.5">Seller Reply</p>
-                      <p className="text-sm text-slate-300">{r.reply}</p>
-                    </div>
-                  )}
+                ))}
+              </div>
+              {reviews.length > 3 && !showAllReviews && (
+                <div className="border-t border-slate-700/40 px-5 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllReviews(true)}
+                    className="w-full rounded-lg border border-slate-600 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-slate-100"
+                  >
+                    More Reviews ({reviews.length - 3} more)
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </main>

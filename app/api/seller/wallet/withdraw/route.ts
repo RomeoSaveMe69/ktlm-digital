@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * Body: { amount: number, paymentMethod: string, accountName: string }
  */
 export async function POST(request: Request) {
-  const dbSession = await mongoose.startSession();
+  let dbSession: mongoose.ClientSession | null = null;
   try {
     const session = await getSession();
     if (!session || (session.role !== "seller" && session.role !== "admin")) {
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
 
     await connectDB();
 
+    dbSession = await mongoose.startSession();
     dbSession.startTransaction();
 
     const sellerId = new mongoose.Types.ObjectId(String(session.userId));
@@ -94,10 +95,12 @@ export async function POST(request: Request) {
       withdrawPendingBalance: user.withdrawPendingBalance,
     });
   } catch (err) {
-    await dbSession.abortTransaction();
+    if (dbSession?.inTransaction()) {
+      await dbSession.abortTransaction();
+    }
     console.error("Seller withdraw error:", err);
     return apiError(normalizeErrorMessage(err), 500);
   } finally {
-    dbSession.endSession();
+    if (dbSession) dbSession.endSession();
   }
 }

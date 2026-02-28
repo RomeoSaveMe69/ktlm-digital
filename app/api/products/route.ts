@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
     await connectDB();
 
-    const query: Record<string, unknown> = { status: "active" };
+    const query: Record<string, unknown> = { status: "active", isActive: { $ne: false } };
     if (gameId) query.gameId = gameId;
     if (categoryId) query.productCategoryId = categoryId;
 

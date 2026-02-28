@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 type UserItem = {
   id: string;
   bid: string;
+  sid: string;
   email: string;
   fullName: string;
   role: string;
@@ -521,7 +522,8 @@ export default function AdminUserPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-700/80 text-left text-xs uppercase tracking-wider text-slate-400">
-                    <th className="px-4 py-3">UID (BID)</th>
+                    <th className="px-4 py-3">BID</th>
+                    <th className="px-4 py-3">SID</th>
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Contact</th>
                     <th className="px-4 py-3 cursor-pointer select-none hover:text-slate-200" onClick={() => handleSort("balance")}>
@@ -541,6 +543,7 @@ export default function AdminUserPage() {
                   {users.map((u) => (
                     <tr key={u.id} className="hover:bg-slate-800/80">
                       <td className="px-4 py-3 font-mono text-xs text-emerald-400">{u.bid || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-violet-400">{u.sid || "—"}</td>
                       <td className="px-4 py-3 text-slate-200">{u.fullName || "—"}</td>
                       <td className="px-4 py-3 text-sm text-slate-400">
                         {u.telegramUsername ? `@${u.telegramUsername}` : u.email}

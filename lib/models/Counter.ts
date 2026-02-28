@@ -41,3 +41,20 @@ export async function getNextSid(): Promise<string> {
   const seq = await getNextSequence("sid");
   return `SID${String(seq).padStart(7, "0")}`;
 }
+
+/**
+ * Generate next OID like "OID-A-0000001".
+ * When number reaches 9999999, reset to 1 and increment the letter.
+ */
+export async function getNextOid(): Promise<string> {
+  const counter = await Counter.findByIdAndUpdate(
+    "oid",
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true },
+  );
+  const raw = counter!.seq;
+  const letterIndex = Math.floor((raw - 1) / 9999999);
+  const num = ((raw - 1) % 9999999) + 1;
+  const letter = String.fromCharCode(65 + (letterIndex % 26));
+  return `OID-${letter}-${String(num).padStart(7, "0")}`;
+}

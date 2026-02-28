@@ -137,6 +137,7 @@ export async function GET(request: NextRequest) {
         users: users.map((u) => ({
           id: u._id.toString(),
           bid: u.bid ?? "",
+          sid: u.sid ?? "",
           email: u.email,
           fullName: u.fullName ?? "",
           role: u.role,
@@ -183,6 +184,7 @@ export async function GET(request: NextRequest) {
       users: users.map((u) => ({
         id: u._id.toString(),
         bid: u.bid ?? "",
+        sid: u.sid ?? "",
         email: u.email,
         fullName: u.fullName ?? "",
         role: u.role,

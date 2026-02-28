@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
           as: "partner",
         },
       },
-      { $unwind: "$partner" },
+      { $unwind: { path: "$partner", preserveNullAndEmptyArrays: false } },
       {
         $project: {
           partnerId: { $toString: "$_id" },

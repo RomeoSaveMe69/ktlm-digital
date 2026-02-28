@@ -46,7 +46,7 @@ export default function SellerChatPage() {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await fetch("/api/chat/conversations?role=buyer");
+      const res = await fetch("/api/chat/conversations");
       const data = await res.json();
       if (res.ok) setConversations(data.conversations ?? []);
     } catch {

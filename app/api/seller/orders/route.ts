@@ -19,12 +19,16 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get("status") ?? "";
+    const oidSearch = searchParams.get("oid")?.trim() ?? "";
 
     await connectDB();
 
     const query: Record<string, unknown> = {
       sellerId: new mongoose.Types.ObjectId(String(session.userId)),
     };
+    if (oidSearch) {
+      query.orderId = { $regex: oidSearch, $options: "i" };
+    }
     if (["pending", "processing", "sent", "completed", "cancelled"].includes(statusFilter)) {
       query.status = statusFilter;
     }

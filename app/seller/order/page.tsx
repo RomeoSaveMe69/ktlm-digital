@@ -29,17 +29,20 @@ export default function SellerOrderPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [actionId, setActionId] = useState<string | null>(null);
+  const [oidSearch, setOidSearch] = useState("");
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      let url = "/api/seller/orders";
-      if (statusFilter) url += `?status=${statusFilter}`;
-      const res = await fetch(url);
+      const params = new URLSearchParams();
+      if (statusFilter) params.set("status", statusFilter);
+      if (oidSearch.trim()) params.set("oid", oidSearch.trim());
+      const qs = params.toString();
+      const res = await fetch(`/api/seller/orders${qs ? `?${qs}` : ""}`);
       const data = await res.json();
       if (res.ok) setOrders(data.orders ?? []);
     } catch { /* ignore */ } finally { setLoading(false); }
-  }, [statusFilter]);
+  }, [statusFilter, oidSearch]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
@@ -69,6 +72,22 @@ export default function SellerOrderPage() {
       <div>
         <h2 className="text-lg font-semibold text-slate-100">Orders</h2>
         <p className="text-sm text-slate-500">Manage incoming orders from buyers</p>
+      </div>
+
+      {/* OID Search */}
+      <div className="flex items-center gap-3">
+        <input
+          type="text"
+          value={oidSearch}
+          onChange={(e) => setOidSearch(e.target.value)}
+          placeholder="Search by Order ID (e.g. OID-A-0000001)"
+          className="w-72 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+        />
+        {oidSearch && (
+          <button type="button" onClick={() => setOidSearch("")} className="text-xs text-slate-400 hover:text-slate-200">
+            Clear
+          </button>
+        )}
       </div>
 
       {/* Status Filter */}

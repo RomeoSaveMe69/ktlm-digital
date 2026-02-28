@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { Order } from "@/lib/models/Order";
 import { Product } from "@/lib/models/Product";
 import { User } from "@/lib/models/User";
+import { getNextOid } from "@/lib/models/Counter";
 import { apiError } from "@/lib/api-utils";
 import "@/lib/models/Game";
 
@@ -127,8 +128,10 @@ export async function POST(request: Request) {
     // Reduce product stock
     await Product.findByIdAndUpdate(productId, { $inc: { inStock: -1 } });
 
-    // Fee fields are 0 at order creation; calculated when seller marks "sent"
+    const orderId = await getNextOid();
+
     const order = await Order.create({
+      orderId,
       buyerId: new mongoose.Types.ObjectId(String(session.userId)),
       sellerId: product.sellerId,
       productId: product._id,

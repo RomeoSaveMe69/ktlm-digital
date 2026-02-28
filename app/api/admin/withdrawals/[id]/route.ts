@@ -20,7 +20,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const dbSession = await mongoose.startSession();
+  let dbSession: mongoose.ClientSession | null = null;
   try {
     const session = await getSession();
     if (!session || session.role !== "admin") {
@@ -40,6 +40,7 @@ export async function PATCH(
 
     await connectDB();
 
+    dbSession = await mongoose.startSession();
     dbSession.startTransaction();
 
     const wr = await WithdrawalRequest.findById(id).session(dbSession);
@@ -100,10 +101,12 @@ export async function PATCH(
       status: wr.status,
     });
   } catch (err) {
-    await dbSession.abortTransaction();
+    if (dbSession?.inTransaction()) {
+      await dbSession.abortTransaction();
+    }
     console.error("Admin withdrawal PATCH error:", err);
     return apiError(normalizeErrorMessage(err), 500);
   } finally {
-    dbSession.endSession();
+    if (dbSession) dbSession.endSession();
   }
 }

@@ -16,7 +16,7 @@ export async function GET(
   try {
     const { id } = await params;
     await connectDB();
-    const p = await Product.findOne({ _id: id, status: "active" })
+    const p = await Product.findOne({ _id: id, status: "active", isActive: { $ne: false } })
       .populate("gameId", "title image")
       .populate("productCategoryId", "title")
       .populate("sellerId", "fullName email")

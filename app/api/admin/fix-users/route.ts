@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { User } from "@/lib/models/User";
-import { getNextBid } from "@/lib/models/Counter";
+import { getNextBid, getNextSid } from "@/lib/models/Counter";
 import { apiError, normalizeErrorMessage } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -27,17 +27,32 @@ export async function POST() {
       .select("_id")
       .lean();
 
-    let fixedCount = 0;
+    let fixedBidCount = 0;
     for (const user of usersWithoutBid) {
       const bid = await getNextBid();
       await User.findByIdAndUpdate(user._id, { $set: { bid } });
-      fixedCount++;
+      fixedBidCount++;
+    }
+
+    const sellersWithoutSid = await User.find({
+      role: { $in: ["seller", "admin"] },
+      $or: [{ sid: null }, { sid: "" }, { sid: { $exists: false } }],
+    })
+      .select("_id")
+      .lean();
+
+    let fixedSidCount = 0;
+    for (const seller of sellersWithoutSid) {
+      const sid = await getNextSid();
+      await User.findByIdAndUpdate(seller._id, { $set: { sid } });
+      fixedSidCount++;
     }
 
     return NextResponse.json({
       ok: true,
-      fixedCount,
-      message: `${fixedCount} user(s) have been assigned a BID.`,
+      fixedBidCount,
+      fixedSidCount,
+      message: `${fixedBidCount} BID(s) and ${fixedSidCount} SID(s) assigned.`,
     });
   } catch (err) {
     console.error("Fix users error:", err);

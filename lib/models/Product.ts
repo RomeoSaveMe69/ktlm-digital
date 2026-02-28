@@ -38,6 +38,8 @@ export interface IProduct {
   buyerInputs: IBuyerInput[];
   /** Seller's description / instructions for buyers. */
   description: string;
+  /** Seller toggle: if false, hidden from public store. */
+  isActive: boolean;
   /** Total completed orders – used for Highest Sold sort. */
   totalSold: number;
   createdAt: Date;
@@ -87,6 +89,7 @@ const productSchema = new Schema<IProduct>(
       default: [],
     },
     description: { type: String, default: "", trim: true },
+    isActive: { type: Boolean, default: true },
     totalSold: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },

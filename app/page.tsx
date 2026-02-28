@@ -8,14 +8,6 @@ import { Cart } from "@/lib/models/Cart";
 
 export const dynamic = "force-dynamic";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Home", icon: "🏠" },
-  { href: "/orders", label: "Orders", icon: "📦" },
-  { href: "/cart", label: "Cart", icon: "🛒" },
-  { href: "/chat", label: "Chat", icon: "💬" },
-  { href: "/profile", label: "Profile", icon: "👤" },
-];
-
 export default async function HomePage() {
   const session = await getSession();
   let userBalance: number | null = null;
@@ -61,7 +53,7 @@ export default async function HomePage() {
       image: g.image ?? "",
     }));
 
-    const products = await Product.find({ status: "active" })
+    const products = await Product.find({ status: "active", isActive: { $ne: false } })
       .populate("gameId", "title")
       .populate("sellerId", "fullName email")
       .sort({ createdAt: -1 })
@@ -248,33 +240,7 @@ export default async function HomePage() {
         </div>
       </main>
 
-      {/* Bottom nav with cart badge */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md safe-area-bottom"
-        aria-label="Main navigation"
-      >
-        <div className="flex items-center justify-around px-2 py-2">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`relative flex flex-col items-center gap-0.5 rounded-lg px-3 py-2 text-xs font-medium transition ${
-                item.href === "/"
-                  ? "text-emerald-400"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <span className="text-lg" aria-hidden>{item.icon}</span>
-              <span>{item.label}</span>
-              {item.href === "/cart" && cartCount > 0 && (
-                <span className="absolute -right-0.5 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      {/* Bottom nav handled by global BottomNav component */}
     </div>
   );
 }
