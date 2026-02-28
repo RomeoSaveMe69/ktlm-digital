@@ -33,6 +33,8 @@ export interface IOrder {
   buyerId: mongoose.Types.ObjectId;
   sellerId: mongoose.Types.ObjectId;
   productId: mongoose.Types.ObjectId;
+  /** Number of units purchased in this order. */
+  quantity: number;
   /** Selling price at time of order (snapshot). */
   price: number;
   /** Platform fee (0.5% of price). Legacy alias, kept for backward compat. */
@@ -62,6 +64,7 @@ const orderSchema = new Schema<IOrder>(
     buyerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     sellerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    quantity: { type: Number, required: true, min: 1, default: 1 },
     price: { type: Number, required: true, min: 0 },
     platformFee: { type: Number, default: 0, min: 0 },
     sellerAmount: { type: Number, default: 0, min: 0 },

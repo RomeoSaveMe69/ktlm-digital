@@ -10,6 +10,7 @@ type ProductItem = {
   id: string;
   customTitle: string;
   categoryTitle: string;
+  categoryImage: string;
   sellerId: string;
   sellerName: string;
   price: number;
@@ -39,9 +40,6 @@ export default function GamePage() {
         if (res.ok) {
           setGame(data.game);
           setCategories(data.categories ?? []);
-          if (data.categories?.length > 0) {
-            setSelectedCategory(data.categories[0].id);
-          }
         }
       } catch { /* ignore */ } finally { setLoading(false); }
     })();
@@ -158,25 +156,39 @@ export default function GamePage() {
             {products.map((p) => (
               <div
                 key={p.id}
-                className="rounded-xl border border-slate-700/60 bg-slate-800/60 p-4 transition hover:border-emerald-500/30 hover:bg-slate-800/80"
+                className="rounded-xl border border-slate-700/60 bg-slate-800/60 overflow-hidden transition hover:border-emerald-500/30 hover:bg-slate-800/80"
               >
                 <Link href={`/product/${p.id}`} className="block">
-                  <p className="font-medium text-slate-200">{p.customTitle}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{p.categoryTitle} · {p.deliveryTime}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-lg font-bold text-emerald-400">
-                      {p.price.toLocaleString()} <span className="text-xs text-slate-400">MMK</span>
-                    </span>
-                    <span className="rounded bg-slate-700/80 px-2 py-0.5 text-xs text-slate-400">
-                      Stock: {p.inStock}
-                    </span>
+                  {p.categoryImage ? (
+                    <img
+                      src={p.categoryImage}
+                      alt={p.categoryTitle}
+                      className="h-36 w-full object-cover sm:h-40"
+                    />
+                  ) : (
+                    <div className="flex h-36 w-full items-center justify-center bg-slate-700/40 text-4xl sm:h-40">
+                      🎮
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <p className="font-medium text-slate-200">{p.customTitle}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{p.categoryTitle} · {p.deliveryTime}</p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-lg font-bold text-emerald-400">
+                        {p.price.toLocaleString()} <span className="text-xs text-slate-400">MMK</span>
+                      </span>
+                      <span className="rounded bg-slate-700/80 px-2 py-0.5 text-xs text-slate-400">
+                        Stock: {p.inStock}
+                      </span>
+                    </div>
                   </div>
                 </Link>
 
-                {/* Seller info + action icons */}
-                <div className="mt-3 flex items-center justify-between border-t border-slate-700/40 pt-3">
+                <div className="mx-4 mb-4 flex items-center justify-between border-t border-slate-700/40 pt-3">
                   <div className="flex items-center gap-2 text-xs text-slate-400 min-w-0">
-                    <span className="truncate">Seller: <span className="text-slate-300">{p.sellerName}</span></span>
+                    <span className="truncate">
+                      <span className="text-slate-300 font-medium">{p.sellerName}</span>
+                    </span>
                     {p.totalSold > 0 && (
                       <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-amber-400">
                         {p.totalSold} sold
@@ -184,7 +196,6 @@ export default function GamePage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Chat icon */}
                     <button
                       type="button"
                       onClick={(e) => { e.preventDefault(); handleChat(p.sellerId, p.sellerName); }}
@@ -195,7 +206,6 @@ export default function GamePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
                     </button>
-                    {/* Profile icon */}
                     <Link
                       href={`/shop/${p.sellerId}`}
                       title="View Seller Profile"

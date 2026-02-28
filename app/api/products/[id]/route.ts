@@ -18,7 +18,7 @@ export async function GET(
     await connectDB();
     const p = await Product.findOne({ _id: id, status: "active", isActive: { $ne: false } })
       .populate("gameId", "title image")
-      .populate("productCategoryId", "title")
+      .populate("productCategoryId", "title image")
       .populate("sellerId", "fullName email shopName profileImage")
       .lean();
 
@@ -37,6 +37,7 @@ export async function GET(
         categoryId:
           (p.productCategoryId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
         categoryTitle: (p.productCategoryId as { title?: string })?.title ?? "",
+        categoryImage: (p.productCategoryId as { image?: string })?.image ?? "",
         sellerId: seller?._id?.toString?.() ?? "",
         sellerName: seller?.shopName || seller?.fullName || seller?.email || "Seller",
         sellerImage: seller?.profileImage ?? "",

@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
     const products = await Product.find(query)
       .populate("gameId", "title image")
-      .populate("productCategoryId", "title")
+      .populate("productCategoryId", "title image")
       .populate("sellerId", "fullName email shopName profileImage")
       .sort(sortObj)
       .limit(limit)
@@ -49,6 +49,7 @@ export async function GET(request: Request) {
         categoryId:
           (p.productCategoryId as { _id?: { toString(): string } })?._id?.toString?.() ?? "",
         categoryTitle: (p.productCategoryId as { title?: string })?.title ?? "",
+        categoryImage: (p.productCategoryId as { image?: string })?.image ?? "",
         sellerId: seller?._id?.toString?.() ?? "",
         sellerName: seller?.shopName || seller?.fullName || seller?.email || "Seller",
         sellerImage: seller?.profileImage ?? "",

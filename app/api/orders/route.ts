@@ -72,6 +72,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const productId = String(body.productId ?? "").trim();
+    const quantity = Math.max(1, Math.floor(Number(body.quantity ?? 1)));
     const buyerInputData: { label: string; value: string }[] = Array.isArray(body.buyerInputData)
       ? body.buyerInputData.map((d: { label: string; value: string }) => ({
           label: String(d.label ?? ""),
@@ -92,6 +93,12 @@ export async function POST(request: Request) {
     if (product.inStock <= 0) {
       return NextResponse.json({ error: "Product is out of stock." }, { status: 400 });
     }
+    if (product.inStock < quantity) {
+      return NextResponse.json(
+        { error: `Only ${product.inStock} unit(s) available. You requested ${quantity}.` },
+        { status: 400 },
+      );
+    }
 
     const missing = (product.buyerInputs ?? [])
       .filter((bi: { label: string; isRequired: boolean }) => bi.isRequired)
@@ -107,15 +114,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const price = product.price;
+    const totalPrice = product.price * quantity;
 
     // Atomically deduct buyer balance (full price held in escrow)
     const buyer = await User.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(String(session.userId)),
-        balance: { $gte: price },
+        balance: { $gte: totalPrice },
       },
-      { $inc: { balance: -price } },
+      { $inc: { balance: -totalPrice } },
       { new: true },
     );
     if (!buyer) {
@@ -125,8 +132,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Reduce product stock
-    await Product.findByIdAndUpdate(productId, { $inc: { inStock: -1 } });
+    // Atomically deduct stock — ensures no overselling under concurrency
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId, inStock: { $gte: quantity } },
+      { $inc: { inStock: -quantity } },
+      { new: true },
+    );
+    if (!updatedProduct) {
+      // Stock was taken by another request; refund buyer balance
+      await User.findByIdAndUpdate(session.userId, { $inc: { balance: totalPrice } });
+      return NextResponse.json(
+        { error: "Product went out of stock. Please try again." },
+        { status: 400 },
+      );
+    }
 
     const orderId = await getNextOid();
 
@@ -135,7 +154,8 @@ export async function POST(request: Request) {
       buyerId: new mongoose.Types.ObjectId(String(session.userId)),
       sellerId: product.sellerId,
       productId: product._id,
-      price,
+      quantity,
+      price: totalPrice,
       platformFee: 0,
       sellerAmount: 0,
       feeAmount: 0,
@@ -148,6 +168,7 @@ export async function POST(request: Request) {
       order: {
         id: order._id.toString(),
         orderId: order.orderId,
+        quantity: order.quantity,
         price: order.price,
         status: order.status,
         createdAt: order.createdAt,
