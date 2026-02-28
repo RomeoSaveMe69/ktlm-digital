@@ -18,6 +18,7 @@ type StorageStats = {
   kyc: { count: number; sizeMB: number };
   sellerProfiles: { count: number; sizeMB: number };
   gamePhotos: { count: number; sizeMB: number };
+  productPhotos: { count: number; sizeMB: number };
 };
 
 export default function AdminStoragePage() {
@@ -35,12 +36,14 @@ export default function AdminStoragePage() {
   const [totalCount, setTotalCount] = useState(0);
 
   const fetchData = useCallback(
-    async (p?: number) => {
+    async (p?: number, overrides?: { sd?: string; ed?: string }) => {
       setLoading(true);
       try {
+        const sd = overrides?.sd ?? startDate;
+        const ed = overrides?.ed ?? endDate;
         const params = new URLSearchParams();
-        if (startDate) params.set("startDate", startDate);
-        if (endDate) params.set("endDate", endDate);
+        if (sd) params.set("startDate", sd);
+        if (ed) params.set("endDate", ed);
         params.set("limit", String(limit));
         params.set("page", String(p ?? page));
         const res = await fetch(`/api/admin/storage?${params.toString()}`);
@@ -73,7 +76,7 @@ export default function AdminStoragePage() {
   function handleClear() {
     setStartDate("");
     setEndDate("");
-    setTimeout(() => fetchData(1), 0);
+    fetchData(1, { sd: "", ed: "" });
   }
 
   const handleClearOne = async (depositId: string) => {
@@ -116,7 +119,8 @@ export default function AdminStoragePage() {
         stats.rechargeReceipts.sizeMB +
         stats.kyc.sizeMB +
         stats.sellerProfiles.sizeMB +
-        stats.gamePhotos.sizeMB
+        stats.gamePhotos.sizeMB +
+        stats.productPhotos.sizeMB
       ).toFixed(2)
     : 0;
 
@@ -331,7 +335,7 @@ export default function AdminStoragePage() {
             </div>
 
             {/* Breakdown */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {[
                 {
                   label: "Recharge Receipts",
@@ -352,6 +356,11 @@ export default function AdminStoragePage() {
                   label: "Game Photos",
                   ...stats.gamePhotos,
                   accent: "text-violet-400",
+                },
+                {
+                  label: "Product Photos",
+                  ...stats.productPhotos,
+                  accent: "text-pink-400",
                 },
               ].map((s) => (
                 <div

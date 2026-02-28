@@ -5,6 +5,7 @@ import { DepositRequest } from "@/lib/models/DepositRequest";
 import { KYC } from "@/lib/models/KYC";
 import { User } from "@/lib/models/User";
 import { Game } from "@/lib/models/Game";
+import { ProductCategory } from "@/lib/models/ProductCategory";
 import { apiError, normalizeErrorMessage } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
@@ -140,6 +141,21 @@ export async function GET(request: Request) {
       },
     ]);
 
+    // Product category images
+    const prodCatAgg = await ProductCategory.aggregate([
+      {
+        $match: {
+          image: { $exists: true, $nin: [null, ""] },
+        },
+      },
+      {
+        $project: { len: { $strLenBytes: "$image" } },
+      },
+      {
+        $group: { _id: null, total: { $sum: "$len" }, count: { $sum: 1 } },
+      },
+    ]);
+
     const storageStats = {
       rechargeReceipts: {
         count: allReceiptsCount,
@@ -156,6 +172,10 @@ export async function GET(request: Request) {
       gamePhotos: {
         count: gameAgg[0]?.count ?? 0,
         sizeMB: +((gameAgg[0]?.total ?? 0) / (1024 * 1024)).toFixed(2),
+      },
+      productPhotos: {
+        count: prodCatAgg[0]?.count ?? 0,
+        sizeMB: +((prodCatAgg[0]?.total ?? 0) / (1024 * 1024)).toFixed(2),
       },
     };
 
