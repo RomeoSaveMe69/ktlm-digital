@@ -10,6 +10,7 @@ const SIDEBAR_NAV = [
   { href: "/seller/product", label: "Product", icon: "🛒" },
   { href: "/seller/product-info", label: "Product Info", icon: "📄" },
   { href: "/seller/price", label: "Price", icon: "💰" },
+  { href: "/seller/profile", label: "Shop Profile", icon: "🏪" },
 ];
 
 export default function SellerLayout({

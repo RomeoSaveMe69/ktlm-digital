@@ -3,32 +3,25 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
-import { Wallet } from "@/lib/models/Wallet";
 import { ProfileSignOut } from "./ProfileSignOut";
+import { KycApplyButton } from "./KycApplyButton";
+import { OrderHistory } from "./OrderHistory";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Profile page: account info, wallets, and role-based actions (Admin Panel, Seller Dashboard, Become a Seller).
- * Requires login; redirects to /login if no session.
- */
 export default async function ProfilePage() {
   const session = await getSession();
-  if (!session) {
-    redirect("/login");
-  }
+  if (!session) redirect("/login");
 
   await connectDB();
   const user = await User.findById(session.userId)
     .select("-passwordHash")
     .lean();
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  const wallets = await Wallet.find({ userId: user._id })
-    .select("currency balance escrowBalance")
-    .lean();
+  const kycStatus = user.kycStatus ?? "none";
+  const canApplyKyc =
+    user.role === "buyer" && (kycStatus === "none" || kycStatus === "rejected");
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 safe-area-pb">
@@ -42,7 +35,6 @@ export default async function ProfilePage() {
               Digital
             </span>
           </Link>
-          {/* Balance chip + deposit shortcut */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 rounded-lg border border-slate-700/60 bg-slate-800/80 px-3 py-1.5">
               <span className="text-xs font-semibold text-emerald-400">
@@ -61,9 +53,10 @@ export default async function ProfilePage() {
         </div>
       </header>
 
-      <main className="px-4 py-6">
+      <main className="mx-auto max-w-2xl px-4 py-6">
         <h1 className="text-xl font-bold text-slate-100 mb-6">Profile</h1>
 
+        {/* Account Info */}
         <section className="mb-6 rounded-xl border border-slate-700/60 bg-slate-800/50 p-4">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
             Account
@@ -94,18 +87,20 @@ export default async function ProfilePage() {
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">KYC</dt>
+              <dt className="text-slate-500">KYC Status</dt>
               <dd>
                 <span
                   className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                    user.kycStatus === "approved"
+                    kycStatus === "approved"
                       ? "bg-emerald-500/20 text-emerald-400"
-                      : user.kycStatus === "rejected"
+                      : kycStatus === "rejected"
                         ? "bg-red-500/20 text-red-400"
-                        : "bg-amber-500/20 text-amber-400"
+                        : kycStatus === "pending"
+                          ? "bg-amber-500/20 text-amber-400"
+                          : "bg-slate-600/50 text-slate-400"
                   }`}
                 >
-                  {user.kycStatus}
+                  {kycStatus === "none" ? "Not Submitted" : kycStatus}
                 </span>
               </dd>
             </div>
@@ -120,19 +115,19 @@ export default async function ProfilePage() {
           </dl>
         </section>
 
+        {/* Balance */}
         <section className="mb-6 rounded-xl border border-slate-700/60 bg-slate-800/50 p-4">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
             Balance
           </h2>
-
-          {/* Main MMK balance from deposit system */}
-          <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-4">
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-4">
             <p className="text-xs text-slate-500 mb-1">Wallet Balance</p>
             <p className="text-3xl font-bold text-emerald-400">
               {(user.balance ?? 0).toLocaleString()}
-              <span className="ml-2 text-base font-normal text-slate-400">MMK</span>
+              <span className="ml-2 text-base font-normal text-slate-400">
+                MMK
+              </span>
             </p>
-            {/* Deposit button */}
             <Link
               href="/deposit"
               className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-500 active:scale-[0.98]"
@@ -141,34 +136,42 @@ export default async function ProfilePage() {
               Deposit / Add Funds
             </Link>
           </div>
-
-          {/* Legacy wallet balances */}
-          {wallets && wallets.length > 0 && (
-            <ul className="space-y-2">
-              {wallets.map((w) => (
-                <li
-                  key={w.currency}
-                  className="flex items-center justify-between rounded-lg border border-slate-700/40 bg-slate-900/50 px-4 py-3"
-                >
-                  <span className="font-medium text-slate-400 text-sm">
-                    {w.currency} (Legacy)
-                  </span>
-                  <div className="text-right">
-                    <p className="font-semibold text-slate-300">
-                      {Number(w.balance).toLocaleString()} {w.currency}
-                    </p>
-                    {Number(w.escrowBalance) > 0 && (
-                      <p className="text-xs text-slate-500">
-                        Escrow: {Number(w.escrowBalance).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
         </section>
 
+        {/* Order History */}
+        <section className="mb-6 rounded-xl border border-slate-700/60 bg-slate-800/50 p-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
+            Recent Orders
+          </h2>
+          <OrderHistory />
+        </section>
+
+        {/* Settings Placeholders */}
+        <section className="mb-6 rounded-xl border border-slate-700/60 bg-slate-800/50 p-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
+            Settings
+          </h2>
+          <div className="space-y-2">
+            <button
+              type="button"
+              disabled
+              className="w-full flex items-center justify-between rounded-lg border border-slate-700/40 bg-slate-900/50 px-4 py-3 text-sm text-slate-300 opacity-60 cursor-not-allowed"
+            >
+              <span>Change Password</span>
+              <span className="text-xs text-slate-500">Coming Soon</span>
+            </button>
+            <button
+              type="button"
+              disabled
+              className="w-full flex items-center justify-between rounded-lg border border-slate-700/40 bg-slate-900/50 px-4 py-3 text-sm text-slate-300 opacity-60 cursor-not-allowed"
+            >
+              <span>Change Email</span>
+              <span className="text-xs text-slate-500">Coming Soon</span>
+            </button>
+          </div>
+        </section>
+
+        {/* Action Buttons */}
         <div className="flex flex-col gap-3">
           {user.role === "admin" && (
             <Link
@@ -186,14 +189,16 @@ export default async function ProfilePage() {
               Go to Seller Dashboard
             </Link>
           )}
-          {user.role === "buyer" && (
-            <Link
-              href="/seller/apply"
-              className="rounded-xl border border-emerald-500/50 bg-emerald-500/10 py-3 px-4 text-center font-medium text-emerald-400 transition hover:bg-emerald-500/20"
-            >
-              Become a Seller
-            </Link>
+
+          {canApplyKyc && <KycApplyButton />}
+
+          {user.role === "buyer" && kycStatus === "pending" && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 py-3 px-4 text-center text-sm text-amber-400">
+              Your seller application is under review. Please wait for admin
+              approval.
+            </div>
           )}
+
           <Link
             href="/orders"
             className="rounded-xl border border-slate-700/60 bg-slate-800/60 py-3 px-4 text-center font-medium text-slate-200 transition hover:bg-slate-800 hover:border-emerald-500/40"

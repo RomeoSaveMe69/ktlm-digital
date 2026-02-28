@@ -3,7 +3,7 @@ import mongoose, { Schema, model, models } from "mongoose";
 /** P2P role: buyer (default), seller, or admin. */
 export type UserRole = "buyer" | "seller" | "admin";
 /** KYC status for seller verification. */
-export type KycStatus = "pending" | "approved" | "rejected";
+export type KycStatus = "none" | "pending" | "approved" | "rejected";
 /** Account status for admin moderation. */
 export type AccountStatus = "ACTIVE" | "SUSPENDED" | "BANNED";
 
@@ -16,6 +16,9 @@ export interface IUser {
   email: string;
   passwordHash: string;
   fullName?: string;
+  profileImage?: string;
+  shopName?: string;
+  shopDescription?: string;
   role: UserRole;
   kycStatus: KycStatus;
   telegramChatId?: string;
@@ -49,6 +52,9 @@ const userSchema = new Schema<IUser>(
     },
     passwordHash: { type: String, required: true, select: false },
     fullName: { type: String, trim: true },
+    profileImage: { type: String },
+    shopName: { type: String, trim: true },
+    shopDescription: { type: String, trim: true },
     role: {
       type: String,
       enum: ["buyer", "seller", "admin"],
@@ -56,8 +62,8 @@ const userSchema = new Schema<IUser>(
     },
     kycStatus: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
+      enum: ["none", "pending", "approved", "rejected"],
+      default: "none",
     },
     telegramChatId: { type: String },
     telegramUsername: { type: String, trim: true },

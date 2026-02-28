@@ -28,7 +28,7 @@ export async function GET(
       _id: sellerId,
       role: { $in: ["seller", "admin"] },
     })
-      .select("fullName email createdAt")
+      .select("fullName email createdAt profileImage shopName shopDescription")
       .lean();
 
     if (!user) return apiError("Seller not found", 404);
@@ -91,6 +91,9 @@ export async function GET(
       seller: {
         id: user._id.toString(),
         name: user.fullName || user.email,
+        shopName: user.shopName ?? "",
+        shopDescription: user.shopDescription ?? "",
+        profileImage: user.profileImage ?? "",
         createdAt: user.createdAt,
         totalProducts: products.length,
         totalSold: soldAgg[0]?.total ?? 0,
