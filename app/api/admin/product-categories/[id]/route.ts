@@ -27,9 +27,13 @@ export async function PUT(
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
+    const updates: Record<string, string> = { title };
+    if (typeof body.image === "string") {
+      updates.image = body.image.trim();
+    }
     const cat = await ProductCategory.findByIdAndUpdate(
       id,
-      { $set: { title } },
+      { $set: updates },
       { new: true }
     ).lean();
     if (!cat) {
@@ -43,6 +47,7 @@ export async function PUT(
         id: cat._id.toString(),
         gameId: cat.gameId.toString(),
         title: cat.title,
+        image: cat.image ?? "",
       },
     });
   } catch (err) {

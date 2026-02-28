@@ -18,6 +18,8 @@ export default function AdminProductPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [modalTitle, setModalTitle] = useState("");
+  const [modalImage, setModalImage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +43,8 @@ export default function AdminProductPage() {
   const openAddModal = () => {
     setEditingCatId(null);
     setModalTitle("");
+    setModalImage(null);
+    setImageError(null);
     setError(null);
     setModalOpen(true);
     setTimeout(() => titleInputRef.current?.focus(), 80);
@@ -49,6 +53,8 @@ export default function AdminProductPage() {
   const openEditModal = (cat: CategoryItem) => {
     setEditingCatId(cat.id);
     setModalTitle(cat.title);
+    setModalImage(cat.image || null);
+    setImageError(null);
     setError(null);
     setModalOpen(true);
     setTimeout(() => titleInputRef.current?.focus(), 80);
@@ -58,7 +64,26 @@ export default function AdminProductPage() {
     setModalOpen(false);
     setEditingCatId(null);
     setModalTitle("");
+    setModalImage(null);
+    setImageError(null);
     setError(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 300 * 1024) {
+      setImageError("File size must be ≤ 300 KB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setImageError("Only image files are accepted.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setModalImage(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleModalSubmit = async (e: React.FormEvent) => {
@@ -72,7 +97,7 @@ export default function AdminProductPage() {
         const res = await fetch(`/api/admin/product-categories/${editingCatId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title }),
+          body: JSON.stringify({ title, image: modalImage ?? "" }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -88,7 +113,7 @@ export default function AdminProductPage() {
         const res = await fetch("/api/admin/product-categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ gameId, title }),
+          body: JSON.stringify({ gameId, title, image: modalImage ?? "" }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -191,9 +216,10 @@ export default function AdminProductPage() {
           </div>
           <div className="overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800/50">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px] text-left text-sm">
+              <table className="w-full min-w-[600px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-700/80 bg-slate-800/80">
+                    <th className="px-4 py-3 font-medium text-slate-400">Image</th>
                     <th className="px-4 py-3 font-medium text-slate-400">Game</th>
                     <th className="px-4 py-3 font-medium text-slate-400">Category</th>
                     <th className="px-4 py-3 font-medium text-slate-400">Action</th>
@@ -202,7 +228,7 @@ export default function AdminProductPage() {
                 <tbody>
                   {filteredCategories.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
+                      <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
                         {selectedGameId === ALL_GAMES_VALUE
                           ? "No categories. Select a game and add one."
                           : "No categories yet. Click + Add Category."}
@@ -214,6 +240,19 @@ export default function AdminProductPage() {
                         key={c.id}
                         className="border-b border-slate-700/40 transition hover:bg-slate-800/60"
                       >
+                        <td className="px-4 py-3">
+                          {c.image ? (
+                            <img
+                              src={c.image}
+                              alt={c.title}
+                              className="h-10 w-10 rounded-lg object-cover border border-slate-600"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-700 text-xs text-slate-500">
+                              —
+                            </div>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-slate-400">
                           {games.find((g) => g.id === c.gameId)?.name ?? c.gameId}
                         </td>
@@ -293,6 +332,37 @@ export default function AdminProductPage() {
                   <p className="mt-1 text-xs text-slate-500">
                     Game: {selectedGame.name}
                   </p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-400">
+                  Category Image (optional, ≤ 300KB)
+                </label>
+                {modalImage && (
+                  <div className="mb-2 flex items-center gap-3">
+                    <img
+                      src={modalImage}
+                      alt="preview"
+                      className="h-16 w-16 rounded-lg border border-slate-600 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setModalImage(null)}
+                      className="text-xs text-red-400 hover:text-red-300"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  disabled={saving}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm text-slate-300 file:mr-3 file:rounded file:border-0 file:bg-slate-700 file:px-3 file:py-1 file:text-sm file:text-slate-300 disabled:opacity-60"
+                />
+                {imageError && (
+                  <p className="mt-1 text-xs text-red-400">{imageError}</p>
                 )}
               </div>
               <div className="flex justify-end gap-2">

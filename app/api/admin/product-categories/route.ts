@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         id: c._id.toString(),
         gameId: c.gameId.toString(),
         title: c.title,
+        image: c.image ?? "",
       })),
     });
   } catch (err) {
@@ -59,15 +60,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const image = typeof body.image === "string" ? body.image.trim() : "";
     const doc = await ProductCategory.create({
       gameId: new mongoose.Types.ObjectId(gameId),
       title,
+      ...(image && { image }),
     });
     return NextResponse.json({
       category: {
         id: doc._id.toString(),
         gameId: doc.gameId.toString(),
         title: doc.title,
+        image: doc.image ?? "",
       },
     });
   } catch (err) {

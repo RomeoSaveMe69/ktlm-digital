@@ -9,6 +9,7 @@ export interface IProductCategory {
   _id: mongoose.Types.ObjectId;
   gameId: mongoose.Types.ObjectId;
   title: string;
+  image?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const productCategorySchema = new Schema<IProductCategory>(
   {
     gameId: { type: Schema.Types.ObjectId, ref: "Game", required: true },
     title: { type: String, required: true, trim: true },
+    image: { type: String, trim: true },
   },
   { timestamps: true },
 );

@@ -15,6 +15,7 @@ export type CategoryItem = {
   id: string;
   gameId: string;
   title: string;
+  image: string;
 };
 
 type AdminDataContextValue = {
@@ -65,10 +66,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) return;
       const data = await res.json();
       const list = (data.categories ?? []).map(
-        (c: { id: string; gameId: string; title: string }) => ({
+        (c: { id: string; gameId: string; title: string; image?: string }) => ({
           id: c.id,
           gameId: c.gameId,
           title: c.title,
+          image: c.image ?? "",
         })
       );
       setCategories(list);
