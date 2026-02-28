@@ -5,16 +5,12 @@ let configured = false;
 function ensureConfig() {
   if (configured) return;
 
-  const cloud_name = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const api_key = process.env.CLOUDINARY_API_KEY;
-  const api_secret = process.env.CLOUDINARY_API_SECRET;
-
-  if (!cloud_name || !api_key || !api_secret) {
-    throw new Error(
-      `Cloudinary not configured. cloud_name=${cloud_name ? "set" : "MISSING"}, ` +
-        `api_key=${api_key ? "set" : "MISSING"}, api_secret=${api_secret ? "set" : "MISSING"}`,
-    );
-  }
+  const cloud_name =
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dz8qwj3qe";
+  const api_key =
+    process.env.CLOUDINARY_API_KEY || "399551884748644";
+  const api_secret =
+    process.env.CLOUDINARY_API_SECRET || "rGVN3uurQDupB6ut_eyxXNdpAJA";
 
   cloudinary.config({ cloud_name, api_key, api_secret });
   configured = true;
